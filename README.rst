@@ -1,7 +1,7 @@
-fpp-matrixdraw
+fpp-mmmatrix
 ==============
 
-FPP Plugin for drawing on a matrix using a HTML5 canvas via jCanvas
+FPP Plugin for real-time manipulation of a matrix using the memory mapped channel block interface
 
 Useful Links:
 
