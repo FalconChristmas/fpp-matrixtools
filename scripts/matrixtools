@@ -1,0 +1,171 @@
+#!/usr/bin/perl
+#
+#   Falcon Pi Player Matrix Tools Plugindaemon header file  
+#
+#   Copyright (C) 2013 Chris Pinkham (CaptainMurdoch)
+#
+#   The Matrix Tools Plugin for the Falcon Pi Player (FPP) is free
+#   software; you can redistribute it and/or modify it under the terms
+#   of the GNU General Public License as published by the Free Software
+#   Foundation; either version 2 of the License, or (at your option) any
+#   later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program; if not, see <http://www.gnu.org/licenses/>.
+# 
+
+use lib "/opt/fpp/lib/perl/";
+
+use Getopt::Long;
+use FPP::MemoryMap;
+
+my $blockName    = "";
+my $getBlockList = 0;
+my $enable       = -1;
+my $message      = "";
+my $color        = "#ff0000";
+my $fillColor    = "#000000";
+my $fillBlock    = 0;
+my $font         = "fixed";
+my $fontSize     = 10;
+my $position     = "scroll";
+my $direction    = "R2L";
+my $pps          = 5;
+my $getFontList  = 0;
+my $clearBlock   = 0;
+my $help         = 0;
+
+GetOptions(
+	"blockname=s"          => \$blockName,
+	"getblocklist!"        => \$getBlockList,
+	"clearblock!"          => \$clearBlock,
+	"enable=i"             => \$enable,
+	"message=s"            => \$message,
+	"color=s"              => \$color,
+	"fillcolor=s"          => \$fill,
+	"fillblock!"           => \$fillBlock,
+	"font=s"               => \$font,
+	"fontsize=i"           => \$fontSize,
+	"getfontlist!"         => \$getFontList,
+	"position=s"           => \$position,
+	"direction=s"          => \$direction,
+	"pixelspersecond=i"    => \$pps,
+	"help!"                => \$help,
+	);
+
+if ($help) {
+	Usage();
+	exit(0);
+}
+
+if (($message ne "") && ($blockName eq "")) {
+	Usage();
+	exit(1);
+}
+
+#############################################################################
+
+my $fppmm = new FPP::MemoryMap;
+$fppmm->OpenMaps();
+
+my $blkInfo;
+
+#############################################################################
+if ($enable != -1) {
+	$blkInfo = GetBlockInfo();
+	if ($enable == 0) {
+		$fppmm->SetBlockState($blkInfo, 0);
+	} else {
+		$fppmm->SetBlockState($blkInfo, 1);
+	}
+} elsif ($getBlockList) {
+	$fppmm->DumpConfig();
+} elsif ($getFontList) {
+	my $fonts = $fppmm->GetFontList();
+	printf( "Available Fonts:\n" );
+	foreach my $font ( @{$fonts} ) {
+		printf( "%s\n", $font);
+	}
+} elsif ($clearBlock) {
+	$blkInfo = GetBlockInfo();
+	$fppmm->SetBlockColor($blkInfo, 0, 0, 0);
+} elsif ($message ne "") {
+	$blkInfo = GetBlockInfo();
+	$fppmm->TextMessage($blkInfo, $message, $color, $fillColor, $font,
+		$fontSize, $position, $direction, $pps);
+} elsif ($fillBlock) {
+	$blkInfo = GetBlockInfo();
+	my $hex = $color;
+	$hex =~ s/#//;
+	my @rgb = unpack 'C*', pack 'H*', $hex;
+	$fppmm->SetBlockColor($blkInfo, $rgb[0], $rgb[1], $rgb[2]);
+} else {
+	Usage();
+}
+
+$fppmm->CloseMaps();
+
+exit(0);
+
+#############################################################################
+
+sub Usage {
+	printf( "USAGE: matrixtools [OPTIONS]\n" );
+	printf( "  --blockname BLOCKNAME     - Memory Map Block Name\n" );
+	printf( "  --getblocklist            - List available Blocks\n" );
+	printf( "  --enable FLAG             - Enable (1) or Disable (0) a block\n" );
+	printf( "  --message MESSAGE         - Text Message to display on matrix\n" );
+	printf( "  --color COLOR             - #RRGGBB hex-encoded color string or\n" );
+	printf( "                              some basic color names\n" );
+#	printf( "  --fillcolor COLOR         - #RRGGBB hex-encoded color string or\n" );
+#	printf( "                              some basic color names\n" );
+	printf( "  --font FONTNAME           - Font family\n" );
+	printf( "  --getfontlist             - List available fonts\n" );
+	printf( "  --fontsize SIZE           - font pitch\n" );
+	printf( "  --position POSITION       - 'scroll' (default), 'center', or\n" );
+	printf( "                              an absolute X,Y position '1,1'\n" );
+	printf( "  --direction DIRECTION     - R2L - Right to Left\n" );
+	printf( "                              L2R - Left to Right\n" );
+	printf( "                              B2T - Bottom to Top\n" );
+	printf( "                              T2B - Top to Bottom\n" );
+	printf( "  --pixelspersecond PPS     - Pixels Per Second to scroll\n" );
+	printf( "  --clearblock              - Clear Block\n" );
+	printf( "  --fillblock               - Fill Block with specified color\n" );
+	printf( "  --help                    - This help text\n" );
+	printf( "\n" );
+	printf( "  Examples:\n" );
+	printf( "\n" );
+	printf( "  matrixtools --getfontlist\n" );
+	printf( "  matrixtools --blockname Matrix1 --enable 1\n" );
+	printf( "  matrixtools --blockname Matrix1 --message 'Merry Christmas'\n" );
+	printf( "  matrixtools --blockname Matrix1 --message 'Merry\\nChristmas' --position center\n" );
+	printf( "  matrixtools --blockname Matrix1 --message 'Merry\\nChristmas' --position 1,1\n" );
+	printf( "  matrixtools --blockname Matrix1 --message 'Ho Ho Ho!' --color '#00ff00'\n" );
+	printf( "  matrixtools --blockname Matrix1 --message 'Ho Ho Ho!' --color green\n" );
+	printf( "  matrixtools --blockname Matrix1 --message 'Ho Ho Ho!' --direction T2B\n" );
+	printf( "  matrixtools --blockname Matrix1 --enable 0\n" );
+	printf( "  \n" );
+	exit(0);
+}
+
+sub GetBlockInfo {
+	if ($blockName eq "") {
+		printf( "ERROR: Empty block name\n");
+		exit(1);
+	}
+
+	my $result = $fppmm->GetBlockInfo($blockName);
+
+	if (!defined($result)) {
+		printf( "ERROR: Unable to find block named '%s'\n", $blockName);
+		exit(1);
+	}
+
+	return $result;
+}
+

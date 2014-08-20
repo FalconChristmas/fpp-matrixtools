@@ -1,7 +1,8 @@
-fpp-mmmatrix
-==============
+fpp-matrixtools
+===============
 
-FPP Plugin for real-time manipulation of a matrix using the memory mapped channel block interface
+FPP Plugin for real-time manipulation of a matrix using the memory mapped
+channel block interface.
 
 Useful Links:
 
