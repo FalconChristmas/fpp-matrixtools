@@ -615,9 +615,9 @@ var quarterCellSize = Math.floor(halfCellSize / 2);
 			<table border=0>
 				<tr><td>Matrix</td>
 					<td width='40px'>&nbsp;</td>
-					<td>Show Text: <? PrintSettingCheckbox("Show Text Effect", "ShowTextEffect", "1", "0", "fpp-mmmatrix"); ?></td>
+					<td>Show Text: <? PrintSettingCheckbox("Show Text Effect", "ShowTextEffect", "1", "0", "fpp-matrixtools"); ?></td>
 					<td width='40px'>&nbsp;</td>
-					<td>Round Pixels: <? PrintSettingCheckbox("Show Round Pixels", "ShowRoundPixels", "1", "0", "fpp-mmmatrix", "refreshMatrix"); ?></td>
+					<td>Round Pixels: <? PrintSettingCheckbox("Show Round Pixels", "ShowRoundPixels", "1", "0", "fpp-matrixtools", "refreshMatrix"); ?></td>
 				</tr>
 			</table>
 			<center>
