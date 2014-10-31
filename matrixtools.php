@@ -145,12 +145,17 @@ function SendWSCommand(data)
 		SendWSCommand({ Command: "SetTestMode", State: 0 });
 	}
 
-	function blockToggle() {
-		var state = 0;
-		if ($('#blockOnOffSwitch').is(':checked', true))
-			state = 1;
+	function blockState() {
+		var state = $('#blockOnOffSwitch').val();
 
 		SendWSCommand({ Command: "SetBlockState", BlockName: blockName, State: state });
+	}
+
+	function autoFillChanged() {
+		if ($('#AutoFill').is(':checked'))
+			FillMatrix();
+		else
+			ClearMatrix();
 	}
 
 	function refreshMatrix() {
@@ -163,6 +168,9 @@ function SendWSCommand(data)
 
 		currentColor = color;
 		$('#colpicker').colpickSetColor(color);
+
+		if ($('#AutoFill').is(':checked'))
+			FillMatrix();
 	}
 
 	function setColorsFromData() {
@@ -208,8 +216,7 @@ function SendWSCommand(data)
 		GetBlockData();
 		InitCanvas();
 
-		if (blockList[blockName].isActive)
-			$('#blockOnOffSwitch').prop('checked', true);
+		$('#blockOnOffSwitch').val(blockList[blockName].isActive);
 	}
 
 	function GetBlockData() {
@@ -311,7 +318,7 @@ function SendWSCommand(data)
 	}
 
 	function PlaceText() {
-		ClearMatrix();
+//		ClearMatrix();
 		var msg = $('#inputText').val();
 		var data = {
 			Command: 'TextMessage',
@@ -465,8 +472,13 @@ var quarterCellSize = Math.floor(halfCellSize / 2);
 		</ul>
 
 		<div id= "divSelect" class='ui-tabs-panel matrix-tool-top-panel'>
-			<select id='blockList' onChange='selectBlock(this.value);'></select> - Enable
-			<input type="checkbox" id="blockOnOffSwitch" onChange='blockToggle();'>
+			<select id='blockList' onChange='selectBlock(this.value);'></select> - State:
+			<select id='blockOnOffSwitch' onChange='blockState()'>
+				<option value='0'>Disabled</option>
+				<option value='1'>Enabled</option>
+				<option value='2'>Transparent</option>
+				<option value='3'>Transparent RGB</option>
+			</select>
 			<input type='button' value='Clear' onClick='ClearMatrix();' class='buttons'>
 			<input type='button' value='Sync Back' onClick='SyncBackDisplay();' class='buttons'>
 		</div>
@@ -571,6 +583,7 @@ var quarterCellSize = Math.floor(halfCellSize / 2);
 						<tr><td>Block Fill:</td>
 							<td><input type='button' value='Fill' onClick='FillMatrix();' class='buttons'></td>
 							</tr>
+						<tr><td>Auto-Fill: <? PrintSettingCheckbox("Auto Fill Block", "AutoFill", 0, 0, "1", "0", "fpp-matrixtools", "autoFillChanged"); ?></td>
 						</table>
 					</table>
 			</div>
@@ -615,9 +628,9 @@ var quarterCellSize = Math.floor(halfCellSize / 2);
 			<table border=0>
 				<tr><td>Matrix</td>
 					<td width='40px'>&nbsp;</td>
-					<td>Show Text: <? PrintSettingCheckbox("Show Text Effect", "ShowTextEffect", "1", "0", "fpp-matrixtools"); ?></td>
+					<td>Show Text: <? PrintSettingCheckbox("Show Text Effect", "ShowTextEffect", 0, 0, "1", "0", "fpp-matrixtools"); ?></td>
 					<td width='40px'>&nbsp;</td>
-					<td>Round Pixels: <? PrintSettingCheckbox("Show Round Pixels", "ShowRoundPixels", "1", "0", "fpp-matrixtools", "refreshMatrix"); ?></td>
+					<td>Round Pixels: <? PrintSettingCheckbox("Show Round Pixels", "ShowRoundPixels", 0, 0, "1", "0", "fpp-matrixtools", "refreshMatrix"); ?></td>
 				</tr>
 			</table>
 			<center>
