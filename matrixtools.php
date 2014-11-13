@@ -267,8 +267,16 @@ function SendWSCommand(data)
 			var key = sortedNames[i];
 			if (blockName == "")
 				blockName = key;
-			blockList[key].width = blockList[key].channelCount / blockList[key].strandsPerString / blockList[key].stringCount / 3;
-			blockList[key].height = blockList[key].channelCount / 3 / blockList[key].width;
+			if (blockList[key].orientation == 'V')
+			{
+				blockList[key].height = blockList[key].channelCount / blockList[key].strandsPerString / blockList[key].stringCount / 3;
+				blockList[key].width = blockList[key].channelCount / 3 / blockList[key].height;
+			}
+			else
+			{
+				blockList[key].width = blockList[key].channelCount / blockList[key].strandsPerString / blockList[key].stringCount / 3;
+				blockList[key].height = blockList[key].channelCount / 3 / blockList[key].width;
+			}
 			$('#blockList').append("<option value='" + key + "'>" + key + " (" + blockList[key].width + "x" + blockList[key].height + ")</option>");
 		}
 
@@ -365,6 +373,7 @@ var quarterCellSize = Math.floor(halfCellSize / 2);
 		canvasWidth = blockList[blockName].width * cellsize;
 		canvasHeight = blockList[blockName].height * cellsize;
 
+		$('#mmcanvas').removeLayers();
 		$('#mmcanvas').clearCanvas();
 
 		// Draw the Black background
