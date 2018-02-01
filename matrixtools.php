@@ -414,22 +414,24 @@ var quarterCellSize = Math.floor(halfCellSize / 2);
 			layer: true,
 			fn: function(ctx) {
 
-				for (var x = 0; x <= canvasWidth; x += cellsize) {
-					ctx.beginPath();
-					ctx.strokeStyle = '#555';
-					ctx.lineWidth = 2;
-					ctx.moveTo(x, 0);
-					ctx.lineTo(x, canvasHeight);
-					ctx.stroke();
-				}
+				if (pluginSettings['ShowGrid'] == "1") {
+					for (var x = 0; x <= canvasWidth; x += cellsize) {
+						ctx.beginPath();
+						ctx.strokeStyle = '#555';
+						ctx.lineWidth = 2;
+						ctx.moveTo(x, 0);
+						ctx.lineTo(x, canvasHeight);
+						ctx.stroke();
+					}
 
-				for (var y = 0; y <= canvasHeight; y += cellsize) {
-					ctx.beginPath();
-					ctx.strokeStyle = '#555';
-					ctx.lineWidth = 2;
-					ctx.moveTo(0, y);
-					ctx.lineTo(canvasWidth, y);
-					ctx.stroke();
+					for (var y = 0; y <= canvasHeight; y += cellsize) {
+						ctx.beginPath();
+						ctx.strokeStyle = '#555';
+						ctx.lineWidth = 2;
+						ctx.moveTo(0, y);
+						ctx.lineTo(canvasWidth, y);
+						ctx.stroke();
+					}
 				}
 			}
 		});
@@ -656,6 +658,8 @@ var quarterCellSize = Math.floor(halfCellSize / 2);
 					<td>Show Text: <? PrintSettingCheckbox("Show Text Effect", "ShowTextEffect", 0, 0, "1", "0", "fpp-matrixtools"); ?></td>
 					<td width='40px'>&nbsp;</td>
 					<td>Round Pixels: <? PrintSettingCheckbox("Show Round Pixels", "ShowRoundPixels", 0, 0, "1", "0", "fpp-matrixtools", "refreshMatrix"); ?></td>
+					<td width='40px'>&nbsp;</td>
+					<td>Show Grid: <? PrintSettingCheckbox("Show Grid", "ShowGrid", 0, 0, "1", "0", "fpp-matrixtools", "refreshMatrix"); ?></td>
 				</tr>
 			</table>
 			<center>
