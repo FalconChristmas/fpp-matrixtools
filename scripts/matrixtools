@@ -78,10 +78,10 @@ my $blkInfo;
 #############################################################################
 if ($enable != -1) {
 	$blkInfo = GetBlockInfo();
-	if ($enable == 0) {
+	if ($enable <= 0) {
 		$fppmm->SetBlockState($blkInfo, 0);
 	} else {
-		$fppmm->SetBlockState($blkInfo, 1);
+		$fppmm->SetBlockState($blkInfo, $enable);
 	}
 } elsif ($getBlockList) {
 	$fppmm->DumpConfig();
