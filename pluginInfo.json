@@ -8,8 +8,8 @@
 	"bugURL": "https://github.com/cpinkham/fpp-matrixtools/issues",
 	"versions": [
 		{
-			"minFPPVersion": 0,
-			"maxFPPVersion": 0,
+			"minFPPVersion": "0",
+			"maxFPPVersion": "0",
 			"branch": "master",
 			"sha": ""
 		}
