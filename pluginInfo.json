@@ -3,9 +3,9 @@
 	"name": "MatrixTools",
 	"author": "Chris Pinkham (CaptainMurdoch)",
 	"description": "This plugin uses FPP's Pixel Overlay feature to allow displaying dynamic text on a matrix and drawing on a matrix using your mouse in the web UI.",
-	"homeURL": "https://github.com/cpinkham/fpp-matrixtools",
-	"srcURL": "https://github.com/cpinkham/fpp-matrixtools.git",
-	"bugURL": "https://github.com/cpinkham/fpp-matrixtools/issues",
+	"homeURL": "https://github.com/FalconChristmas/fpp-matrixtools",
+	"srcURL": "https://github.com/FalconChristmas/fpp-matrixtools.git",
+	"bugURL": "https://github.com/FalconChristmas/fpp-matrixtools/issues",
 	"versions": [
 		{
 			"minFPPVersion": "0",
