@@ -7,12 +7,18 @@
 	"srcURL": "https://github.com/FalconChristmas/fpp-matrixtools.git",
 	"bugURL": "https://github.com/FalconChristmas/fpp-matrixtools/issues",
 	"versions": [
-		{
-			"minFPPVersion": "0",
-			"maxFPPVersion": "0",
-			"branch": "master",
-			"sha": ""
-		}
+            {
+                "minFPPVersion": "0",
+                "maxFPPVersion": "2.6.99",
+                "branch": "master",
+                "sha": ""
+            },
+            {
+                "minFPPVersion": "2.7",
+                "maxFPPVersion": "0",
+                "branch": "REST-API",
+                "sha": ""
+            }
 	]
 }
 
