@@ -9,8 +9,14 @@
 	"versions": [
 		{
 			"minFPPVersion": "0",
-			"maxFPPVersion": "0",
+			"maxFPPVersion": "2.6.99",
 			"branch": "master",
+			"sha": ""
+		},
+		{
+			"minFPPVersion": "2.7",
+			"maxFPPVersion": "0",
+			"branch": "REST-API",
 			"sha": ""
 		}
 	]

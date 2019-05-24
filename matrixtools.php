@@ -60,95 +60,25 @@ canvas.matrix {
 </style>
 
 <script type="text/javascript">
-var wsIsOpen = 0;
-var ws;
 var blockList = {};
 var blockData = [];
 var blockName = "Matrix1";
-var dataIsPending = 0;
-var pendingData;
 var penWidth = 1;
 
-if ( ! window.console ) console = { log: function(){} };
+    if ( ! window.console ) console = { log: function(){} };
 
-function WSGetBlockData(data)
-{
-	var dbws = new WebSocket("ws://<? echo $_SERVER['HTTP_HOST']; ?>:32321/echo");
-	dbws.onopen = function()
-	{
-		dbws.send(JSON.stringify(data));
-	}
-	dbws.onmessage = function(evt)
-	{
-		blockData = JSON.parse(evt.data).Result;
-		setColorsFromData();
-	}
-}
-
-function SyncBackDisplay() {
-	WSGetBlockData( { Command: "GetBlockData", BlockName: blockName } );
-}
-
-function SendWSCommand(data)
-{
-	if (!wsIsOpen)
-	{
-		dataIsPending = 1;
-		pendingData = data;
-
-		ws = new WebSocket("ws://<? echo $_SERVER['HTTP_HOST']; ?>:32321/echo");
-		ws.onopen = function()
-		{
-			wsIsOpen = 1;
-			if (dataIsPending)
-			{
-				dataIsPending = 0;
-				ws.send(JSON.stringify(pendingData));
-			}
-		}
-		ws.onmessage = function(evt)
-		{
-			var data = JSON.parse(evt.data);
-			if (data.Command == "GetBlockList") {
-				blockList = JSON.parse(evt.data).Result;
-				ProcessBlockListResponse();
-			} else if (data.Command == "GetBlockData") {
-				var parsedData = JSON.parse(evt.data)
-				blockData = parsedData.Result;
-				setColorsFromData();
-				if (!parsedData.Locked)
-					StopBlockDataTimer();
-			} else if (data.Command == "GetFontList") {
-				ProcessFontListResponse(JSON.parse(evt.data).Result);
-			}
-		},
-     	ws.onclose = function()
-		{ 
-		 	wsIsOpen = 0;
-		};
-	} else {
-		ws.send(JSON.stringify(data));
-	}
-}
-
-</script>
-
-<script>
 	var currentColor = '#ff0000';
 	var cellColors = {};
 
-	function testModeOn() {
-		SendWSCommand({ Command: "SetTestMode", State: 1 });
-	}
-
-	function testModeOff() {
-		SendWSCommand({ Command: "SetTestMode", State: 0 });
-	}
-
 	function blockState() {
 		var state = $('#blockOnOffSwitch').val();
-
-		SendWSCommand({ Command: "SetBlockState", BlockName: blockName, State: state });
+        $.ajax({
+               url: "/api/overlays/model/" + blockName + "/state",
+               method: 'PUT',
+               contentType: "application/json",
+               data: '{"State": ' + state + '}', // data as js object
+               success: function() {}
+               });
 	}
 
 	function autoFillChanged() {
@@ -196,17 +126,9 @@ function SendWSCommand(data)
 		} : null;
 	}
 
-	function PixelHex(x, y, hex) {
-		var rgb = hexToRgb(hex);
-		return { Command: 'SetBlockPixel', BlockName: blockName, X: x, Y: y, RGB: [ rgb.r, rgb.g,rgb.b ] };
-	}
-
-	function PixelRGB(x, y, r, g, b) {
-		return { Command: 'SetBlockPixel', BlockName: blockName, X: x, Y: y, RGB: [ r, g, b ] };
-	}
-
 	function ClearMatrix() {
-		SendWSCommand( { Command: "ClearBlock", BlockName: blockName } );
+        $.get( "/api/overlays/model/" + blockName + "/clear", function(data) {
+              });
 		cellColors = {};
 		refreshMatrix();
 	}
@@ -220,7 +142,13 @@ function SendWSCommand(data)
 	}
 
 	function GetBlockData() {
-		SendWSCommand( { Command: "GetBlockData", BlockName: blockName } );
+        $.get( "/api/overlays/model/" + blockName + "/data", function(data) {
+              blockData = data.data;
+              setColorsFromData();
+              if (!data.isLocked) {
+                StopBlockDataTimer();
+              }
+        });
 	}
 
 	var blockDataTimer = null;
@@ -235,58 +163,51 @@ function SendWSCommand(data)
 	}
 
 	function GetFontList() {
-		SendWSCommand( { Command: "GetFontList" } );
-	}
-
-	function ProcessFontListResponse(list) {
-		$('#fontList option').remove();
-		for (var i = 0; i < list.length; i++) {
-			var key = list[i];
-			var text = key.replace(/[^-a-zA-Z0-9]/g, '');
-			if (key == text)
-			{
-				if (key == "fixed")
-					$('#fontList').append("<option value='" + key + "' selected>" + text + "</option>");
-				else
-					$('#fontList').append("<option value='" + key + "'>" + text + "</option>");
-			}
-		}
+        $.get( "/api/overlays/fonts", function(data) {
+              $('#fontList option').remove();
+              data.forEach( function (item, index) {
+                  var key = item;
+			      var text = key.replace(/[^-a-zA-Z0-9]/g, '');
+                  $('#fontList').append("<option value='" + key + "'>" + text + "</option>");
+              });
+           });
 	}
 
 	function GetBlockList() {
-		SendWSCommand( { Command: "GetBlockList" } );
-	}
-
-	function ProcessBlockListResponse() {
-		GetFontList();
-		$('#blockList option').remove();
-		blockName = "";
-		var sortedNames = Object.keys(blockList);
-		sortedNames.sort();
-		for (var i = 0; i < sortedNames.length; i++) {
-			var key = sortedNames[i];
-			if (blockName == "")
-				blockName = key;
-			if (blockList[key].orientation == 'V')
-			{
-				blockList[key].height = blockList[key].channelCount / blockList[key].strandsPerString / blockList[key].stringCount / 3;
-				blockList[key].width = blockList[key].channelCount / 3 / blockList[key].height;
-			}
-			else
-			{
-				blockList[key].width = blockList[key].channelCount / blockList[key].strandsPerString / blockList[key].stringCount / 3;
-				blockList[key].height = blockList[key].channelCount / 3 / blockList[key].width;
-			}
-			$('#blockList').append("<option value='" + key + "'>" + key + " (" + blockList[key].width + "x" + blockList[key].height + ")</option>");
-		}
-
-		selectBlock(blockName);
+        $.get( "/api/overlays/models", function(data){
+              blockList = new Map();
+              $('#blockList option').remove();
+              blockName = "";
+              data.forEach( function (item, index) {
+                    if (blockName == "") {
+                        blockName = item["Name"];
+                    }
+                    var key = item["Name"];
+                    if (item.Orientation == 'Vertical') {
+                           item.height = item.ChannelCount / item.StrandsPerString / item.StringCount / 3;
+                           item.width = item.ChannelCount / 3 / item.height;
+                    } else {
+                           item.width = item.ChannelCount / item.StrandsPerString / item.StringCount / 3;
+                           item.height = item.ChannelCount / 3 / item.width;
+                    }
+                           
+                    blockList[key] = item;
+                    $('#blockList').append("<option value='" + key + "'>" + key + " (" + blockList[key].width + "x" + blockList[key].height + ")</option>");
+              });
+              selectBlock(blockName);
+        });
 	}
 
 	function FillMatrix() {
 		var rgb = hexToRgb(currentColor);
-		SendWSCommand( { Command: "SetBlockColor", BlockName: blockName,
-			RGB: [ rgb.r, rgb.g, rgb.b ] } );
+        $.ajax({
+               url: "/api/overlays/model/" + blockName + "/fill",
+               method: 'PUT',
+               contentType: "application/json",
+               data: JSON.stringify({RGB: [ rgb.r, rgb.g, rgb.b ]}),
+               success: function() {}
+               });
+        
 		if (currentColor == "#000000") {
 			cellColors = {};
 		} else {
@@ -320,30 +241,40 @@ function SendWSCommand(data)
 		refreshMatrix();
 
 		var rgb = hexToRgb(currentColor);
-
-		var data = { Command: 'SetBlockPixel', BlockName: blockName, X: x, Y: y, RGB: [ rgb.r, rgb.g, rgb.b ] };
-		SendWSCommand(data);
-	}
+        $.ajax({
+               url: "/api/overlays/model/" + blockName + "/pixel",
+               method: 'PUT',
+               contentType: "application/json",
+               data: JSON.stringify({RGB: [ rgb.r, rgb.g, rgb.b ], X: x, Y: y}),
+               success: function() {}
+               });
+    }
 
 	function PlaceText() {
 //		ClearMatrix();
 		var msg = $('#inputText').val();
 		var data = {
-			Command: 'TextMessage',
-			BlockName: blockName,
 			Message: msg,
 			Color: currentColor,
-			Fill: '#000000',
 			Font: $('#fontList').val(),
-			FontSize: $('#fontSize').val(),
+			FontSize: parseInt($('#fontSize').val()),
 			Position: $('#textPosition').val(),
-			Direction: $('#scrollDirection').val(),
-			PixelsPerSecond: $('#scrollSpeed').val(),
+			PixelsPerSecond: parseInt($('#scrollSpeed').val()),
+            AntiAlias: $('#antiAliased').prop('checked')
 			};
-		SendWSCommand(data);
 
 		if ($('#ShowTextEffect').is(':checked'))
 			StartBlockDataTimer();
+        
+        $.ajax({
+               url: "/api/overlays/model/" + blockName + "/text",
+               method: 'PUT',
+               contentType: "application/json",
+               data: JSON.stringify(data),
+               success: function() {
+                    GetBlockData();
+               }
+               });
 	}
 
 	var canvasWidth = 740;
@@ -356,19 +287,19 @@ function SendWSCommand(data)
 	function InitCanvas() {
 		if ((blockList[blockName].width > 74) || (blockList[blockName].height > 37))
 			cellsize = 5;
-cellsize = 5;
+        cellsize = 5;
 
-xsize = parseInt(740 / blockList[blockName].width);
-ysize = parseInt(370 / blockList[blockName].height);
-if (xsize < ysize)
-	cellsize = xsize;
-else
-	cellsize = ysize;
-if (cellsize > 20)
-	cellsize = 20;
+        xsize = parseInt(740 / blockList[blockName].width);
+        ysize = parseInt(370 / blockList[blockName].height);
+        if (xsize < ysize)
+            cellsize = xsize;
+        else
+            cellsize = ysize;
+        if (cellsize > 20)
+            cellsize = 20;
 
-var halfCellSize = Math.floor(cellsize / 2);
-var quarterCellSize = Math.floor(halfCellSize / 2);
+        var halfCellSize = Math.floor(cellsize / 2);
+        var quarterCellSize = Math.floor(halfCellSize / 2);
 
 		canvasWidth = blockList[blockName].width * cellsize;
 		canvasHeight = blockList[blockName].height * cellsize;
@@ -491,7 +422,7 @@ var quarterCellSize = Math.floor(halfCellSize / 2);
 				<option value='3'>Transparent RGB</option>
 			</select>
 			<input type='button' value='Clear' onClick='ClearMatrix();' class='buttons'>
-			<input type='button' value='Sync Back' onClick='SyncBackDisplay();' class='buttons'>
+			<input type='button' value='Sync Back' onClick='GetBlockData();' class='buttons'>
 		</div>
 
 		<div id="tab-mmtext" class='matrix-tool-middle-panel'>
@@ -503,14 +434,6 @@ var quarterCellSize = Math.floor(halfCellSize / 2);
 						<td><select id='fontList'>
 							</select></td>
 						<td width='30px'></td>
-						<td>Scroll&nbsp;Direction:</td>
-						<td><select id='scrollDirection'>
-							<option value='R2L' selected>Right To Left</option>
-							<option value='L2R'>Left To Right</option>
-							<option value='B2T'>Bottom To Top</option>
-							<option value='T2B'>Top To Bottom</option>
-							</select>
-							</td>
 						</tr>
 					<tr><td>Font&nbsp;Size:</td>
 						<td><select id='fontSize'>
@@ -547,6 +470,18 @@ var quarterCellSize = Math.floor(halfCellSize / 2);
 							<option value='60'>60</option>
 							</select>
 							</td>
+                            <td width='30px'></td>
+                            <td>Anti-Aliased:</td>
+                            <td><input type='checkbox' name='antiAliased' id='antiAliased'></td>
+						</tr>
+					<tr><td>Position:</td>
+						<td><select id='textPosition'>
+							<option value='Center' selected>Center</option>
+                            <option value='R2L'>Right To Left</option>
+                            <option value='L2R'>Left To Right</option>
+                            <option value='B2T'>Bottom To Top</option>
+                            <option value='T2B'>Top To Bottom</option>
+							</select></td>
 						<td width='30px'></td>
 						<td>Scroll&nbsp;Speed (pixels per second):</td>
 						<td><select id='scrollSpeed'>
@@ -588,12 +523,6 @@ var quarterCellSize = Math.floor(halfCellSize / 2);
 							<option value='100'>100</option>
 							</select>
 							</td>
-						</tr>
-					<tr><td>Position:</td>
-						<td><select id='textPosition'>
-							<option value='center'>Center</option>
-							<option value='scroll' selected>Scroll</option>
-							</select></td>
 						</tr>
 					</table>
 
@@ -688,6 +617,7 @@ var quarterCellSize = Math.floor(halfCellSize / 2);
 	});
 
 	GetBlockList();
+    GetFontList();
 
 </script>
 

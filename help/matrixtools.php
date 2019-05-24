@@ -21,9 +21,9 @@
 <li><b>Text</b> - The text to display</li>
 <li><b>Font</b> - The font used to display the text</li>
 <li><b>Font Size</b> - The font size used to display the text</li>
-<li><b>Position</b> - The position of the text, currently either 'scroll' or 'center'</li>
-<li><b>Scroll Direction</b> - The direction to scroll the text when the Position field is set to 'Scroll'</li>
-<li><b>Scroll Speed</b> - The speed at which to scroll text when the Position field is set to 'Scroll'</li>
+<li><b>Position</b> - The position of the text, currently either 'Center' or the direction to scroll the text</li>
+<li><b>Anti-Aliased</b> - Whether to try using font smoothing</li>
+<li><b>Scroll Speed</b> - The speed at which to scroll text when the Position field to scroll the text</li>
 <br>
 <p>Once you have selected the desired options and filled in the text you want to display, click the 'Go' button to show the text on your display.  This will only work when the selected model is set to a non-Disabled state.  If you are scrolling text, it may take a short while to scroll depending on the length of the text provided and the scroll speed.  You need to wait for the scrolling to complete and all characters to be off the screen before trying to display another text message.</p>
 <br>
