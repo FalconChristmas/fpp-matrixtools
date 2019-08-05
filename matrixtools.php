@@ -278,7 +278,7 @@ var penWidth = 1;
 	}
 
 	var canvasWidth = 740;
-	var canvasHeight = 370;
+	var canvasHeight = 400;
 	var cellsize = 10;
 	var mouseDown = 0;
 	var mouseDownX= 0;
@@ -290,7 +290,7 @@ var penWidth = 1;
         cellsize = 5;
 
         xsize = parseInt(740 / blockList[blockName].width);
-        ysize = parseInt(370 / blockList[blockName].height);
+        ysize = parseInt(400 / blockList[blockName].height);
         if (xsize < ysize)
             cellsize = xsize;
         else
@@ -592,7 +592,7 @@ var penWidth = 1;
 				</tr>
 			</table>
 			<center>
-				<canvas id='mmcanvas' class='matrix' height='371' width='741'></canvas>
+				<canvas id='mmcanvas' class='matrix' height='401' width='741'></canvas>
 			</center>
 		</div>
 
