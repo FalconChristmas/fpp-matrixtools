@@ -183,7 +183,7 @@ var penWidth = 1;
                         blockName = item["Name"];
                     }
                     var key = item["Name"];
-                    if (item.Orientation == 'Vertical') {
+                    if (item.Orientation == 'vertical') {
                            item.height = item.ChannelCount / item.StrandsPerString / item.StringCount / 3;
                            item.width = item.ChannelCount / 3 / item.height;
                     } else {
