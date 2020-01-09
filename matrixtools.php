@@ -1,9 +1,8 @@
+<?
+$canvasWidth = 1000;
+$canvasHeight = 400;
+?>
 <style>
-canvas.matrix {
-	height: 371px;
-	width: 741px;
-}
-
 .matrix-tool-top-panel {
 	padding-bottom: 0px !important;
 }
@@ -63,7 +62,6 @@ canvas.matrix {
 var blockList = {};
 var blockData = [];
 var blockName = "Matrix1";
-var penWidth = 1;
 
     if ( ! window.console ) console = { log: function(){} };
 
@@ -221,6 +219,28 @@ var penWidth = 1;
 		refreshMatrix();
 	}
 
+	function ColorPixelUnderMouse(layer) {
+		var x = Math.floor(layer.eventX / cellsize);
+
+        if (x >= blockList[blockName].width)
+            x = blockList[blockName].width - 1;
+
+		var y = Math.floor(layer.eventY / cellsize);
+
+        if (y >= blockList[blockName].height)
+            y = blockList[blockName].height - 1;
+
+		if (pluginSettings['LargePen'] == "1") {
+			for (var xd = -1; xd <= 1; xd++) {
+				for (var yd = -1; yd <= 1; yd++) {
+					ColorPixel(x + xd, y + yd);
+				}
+			}
+		} else {
+			ColorPixel(x, y);
+		}
+	}
+
 	function ColorPixel(x, y) {
 		if ((x >= blockList[blockName].width) ||
 			(y >= blockList[blockName].height) ||
@@ -228,7 +248,6 @@ var penWidth = 1;
 			(y < 0))
 			return;
 
-		// FIXME, enhance to add pen width support (1, 3, 5, 7, 9)
 		var key = x + "," + y;
 		if (currentColor == "")
 			currentColor = '#000000';
@@ -277,20 +296,20 @@ var penWidth = 1;
                });
 	}
 
-	var canvasWidth = 740;
-	var canvasHeight = 400;
+	var canvasWidth = <? echo $canvasWidth; ?>;
+	var canvasHeight = <? echo $canvasHeight; ?>;
 	var cellsize = 10;
+	var halfCellSize = Math.floor(cellsize / 2);
+	var quarterCellSize = Math.floor(halfCellSize / 2);
 	var mouseDown = 0;
-	var mouseDownX= 0;
-	var mouseDownY= 0;
 
 	function InitCanvas() {
-		if ((blockList[blockName].width > 74) || (blockList[blockName].height > 37))
+		if ((blockList[blockName].width > (canvasWidth / 10)) || (blockList[blockName].height > (canvasHeight / 10)))
 			cellsize = 5;
         cellsize = 5;
 
-        xsize = parseInt(740 / blockList[blockName].width);
-        ysize = parseInt(400 / blockList[blockName].height);
+        xsize = parseInt(canvasWidth / blockList[blockName].width);
+        ysize = parseInt(canvasHeight / blockList[blockName].height);
         if (xsize < ysize)
             cellsize = xsize;
         else
@@ -298,11 +317,20 @@ var penWidth = 1;
         if (cellsize > 20)
             cellsize = 20;
 
-        var halfCellSize = Math.floor(cellsize / 2);
-        var quarterCellSize = Math.floor(halfCellSize / 2);
+        halfCellSize = Math.floor(cellsize / 2);
+        quarterCellSize = Math.floor(halfCellSize / 2);
+
+		if (cellsize > 4)
+			$('.showGridWrapper').show();
+		else
+			$('.showGridWrapper').hide();
 
 		canvasWidth = blockList[blockName].width * cellsize;
 		canvasHeight = blockList[blockName].height * cellsize;
+
+        var ctx = $('#mmcanvas')[0].getContext('2d');
+        ctx.canvas.width = canvasWidth;
+        ctx.canvas.height = canvasHeight;
 
 		$('#mmcanvas').removeLayers();
 		$('#mmcanvas').clearCanvas();
@@ -317,26 +345,15 @@ var penWidth = 1;
 			width: canvasWidth,
 			height: canvasHeight,
 			mousedown: function(layer) {
-				var pixelX = Math.floor(layer.eventX / cellsize);
-				var pixelY = Math.floor(layer.eventY / cellsize);
 				mouseDown = 1;
-				mouseDownX = pixelX;
-				mouseDownY = pixelY;
 			},
 			mouseup: function(layer) {
-				var pixelX = Math.floor(layer.eventX / cellsize);
-				var pixelY = Math.floor(layer.eventY / cellsize);
+				ColorPixelUnderMouse(layer);
 				mouseDown = 0;
-				ColorPixel(pixelX, pixelY);
 			},
 			mousemove: function(layer) {
 				if (mouseDown)
-				{
-					var pixelX = Math.floor(layer.eventX / cellsize);
-					var pixelY = Math.floor(layer.eventY / cellsize);
-
-					ColorPixel(pixelX, pixelY);
-				}
+					ColorPixelUnderMouse(layer);
 			},
 		});
 
@@ -345,7 +362,8 @@ var penWidth = 1;
 			layer: true,
 			fn: function(ctx) {
 
-				if (pluginSettings['ShowGrid'] == "1") {
+				if ((pluginSettings['ShowGrid'] == "1") &&
+					(cellsize > 4)) {
 					for (var x = 0; x <= canvasWidth; x += cellsize) {
 						ctx.beginPath();
 						ctx.strokeStyle = '#555';
@@ -383,7 +401,7 @@ var penWidth = 1;
 						y = y * cellsize + 1;
 
 						ctx.beginPath();
-						if (pluginSettings['ShowRoundPixels'] == "1") {
+						if ((halfCellSize) && (quarterCellSize) && (pluginSettings['ShowRoundPixels'] == "1")) {
 							ctx.arc(x + halfCellSize, y + halfCellSize, quarterCellSize, 0, 2 * Math.PI, false);
 						} else {
 							ctx.rect(x, y, cellsize - 2, cellsize - 2);
@@ -587,19 +605,26 @@ var penWidth = 1;
 					<td>Show Text: <? PrintSettingCheckbox("Show Text Effect", "ShowTextEffect", 0, 0, "1", "0", "fpp-matrixtools"); ?></td>
 					<td width='40px'>&nbsp;</td>
 					<td>Round Pixels: <? PrintSettingCheckbox("Show Round Pixels", "ShowRoundPixels", 0, 0, "1", "0", "fpp-matrixtools", "refreshMatrix"); ?></td>
+					<td class='showGridWrapper' width='40px'>&nbsp;</td>
+					<td class='showGridWrapper'>Show Grid: <? PrintSettingCheckbox("Show Grid", "ShowGrid", 0, 0, "1", "0", "fpp-matrixtools", "refreshMatrix"); ?></td>
 					<td width='40px'>&nbsp;</td>
-					<td>Show Grid: <? PrintSettingCheckbox("Show Grid", "ShowGrid", 0, 0, "1", "0", "fpp-matrixtools", "refreshMatrix"); ?></td>
+					<td>Large Pen: <? PrintSettingCheckbox("Large Pen", "LargePen", 0, 0, "1", "0", "fpp-matrixtools", ""); ?></td>
 				</tr>
 			</table>
 			<center>
-				<canvas id='mmcanvas' class='matrix' height='401' width='741'></canvas>
+				<table>
+					<tr><td>
+						<canvas id='mmcanvas' class='matrix' width='<? echo $canvasWidth + 1; ?>' height=<? echo $canvasHeight + 1; ?>'></canvas>
+					</td><td>
+						<div id='log'></div>
+					</td></tr>
+				</table>
 			</center>
 		</div>
 
 	</div>
 </div>
 
-<div id='log'></div>
 
 <script>
 
