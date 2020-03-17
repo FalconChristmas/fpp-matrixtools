@@ -151,12 +151,16 @@ var blockName = "Matrix1";
 
 	var blockDataTimer = null;
 	function StartBlockDataTimer() {
+        if (blockDataTimer != null) {
+            clearInterval(blockDataTimer);
+        }
 		blockDataTimer = setInterval(function(){GetBlockData()}, 100);
 	}
 
 	function StopBlockDataTimer() {
 		if (blockDataTimer != null) {
 			clearInterval(blockDataTimer);
+            blockDataTimer = null;
 		}
 	}
 
