@@ -131,15 +131,33 @@ function MapColorName($color) {
     return $color;
 }
 
-function DisplayTextOnModel($host, $model, $msg, $Position, $Font, $FontSize, $color, $PPS, $AntiAlias) {
+function DisplayTextOnModel($host, $model, $msg, $Position, $Font, $FontSize, $color, $PPS, $AntiAlias, $Duration="10", $autoenable="false") {
     $color = MapColorName($color);
-    $data = array('Message'=>$msg, 'Position'=>$Position, 'Font'=>$Font, 'FontSize'=>$FontSize, 'Color'=>$color, 'PixelsPerSecond'=>$PPS, 'AntiAlias'=>$AntiAlias);
+    
+    
+    $data["command"] = "Overlay Model Effect";
+    
+    $args = array();
+    $args[] = $model;
+    $args[] = "" . $autoenable;
+    $args[] = "Text";
+    $args[] = $color;
+    $args[] = $Font;
+    $args[] = "" . $FontSize;
+    $args[] = "" . $AntiAlias;
+    $args[] = $Position;
+    $args[] = "" . $PPS;
+    $args[] = "" . $Duration;
+    $args[] = $msg;
+    $data["args"] = $args;
+    echo json_encode($data);
     $data = json_encode($data);
-    $ch = curl_init("http://" . $host . "/api/overlays/model/" . $model. "/text");
+    
+    $ch = curl_init("http://" . $host . "/api/command");
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PUT");
+    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
     curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json','Content-Length: ' . strlen($data)));
-    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PUT');
+    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
     curl_setopt($ch, CURLOPT_POSTFIELDS,$data);
 
     $data = curl_exec($ch);
