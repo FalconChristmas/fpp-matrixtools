@@ -308,6 +308,21 @@ var blockName = "Matrix1";
 	var mouseDown = 0;
 
 	function InitCanvas() {
+        if ((blockList[blockName].width > 400) ||
+            (blockList[blockName].height > 400)) {
+            $('#mmcanvas').hide();
+            $('#warning').html('Model too large to display.');
+            $('#warning').show();
+            return;
+        } else {
+            $('#warning').hide();
+            $('#warning').html('');
+            $('#mmcanvas').show();
+        }
+
+        canvasWidth = <? echo $canvasWidth; ?>;
+        canvasHeight = <? echo $canvasHeight; ?>;
+
 		if ((blockList[blockName].width > (canvasWidth / 10)) || (blockList[blockName].height > (canvasHeight / 10)))
 			cellsize = 5;
         cellsize = 5;
@@ -490,6 +505,10 @@ var blockName = "Matrix1";
 							<option value='56'>56</option>
 							<option value='58'>58</option>
 							<option value='60'>60</option>
+							<option value='64'>64</option>
+							<option value='70'>70</option>
+							<option value='74'>74</option>
+							<option value='80'>80</option>
 							</select>
 							</td>
                             <td width='30px'></td>
@@ -619,7 +638,11 @@ var blockName = "Matrix1";
 				<table>
 					<tr><td>
 						<canvas id='mmcanvas' class='matrix' width='<? echo $canvasWidth + 1; ?>' height=<? echo $canvasHeight + 1; ?>'></canvas>
-					</td><td>
+                        </td></tr>
+                    <tr><td align='center'>
+						<span id='warning' style='display: none; color: #ff0000; font-weight: bold;'></span>
+                        </td></tr>
+                    <tr><td align='center'>
 						<div id='log'></div>
 					</td></tr>
 				</table>
