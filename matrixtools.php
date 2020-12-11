@@ -104,13 +104,31 @@ var blockName = "Matrix1";
 	function setColorsFromData() {
 		cellColors = {};
 		var width = blockList[blockName].width;
-		for (var p = 0; p < blockData.length; p += 3)
-		{
-			var x = p / 3 % width;
-			var y = parseInt(p / 3 / width);
-			var key = x + "," + y;
-			cellColors[key] = '#' + $.colpick.rgbToHex({ r: blockData[p], g: blockData[p+1], b: blockData[p+2]});
-		}
+
+        if (useRLE) {
+            var i = 0;
+            for (var p = 0; p < blockData.length; p += 4) {
+                var c = blockData[p];
+                var r = blockData[p+1];
+                var g = blockData[p+2];
+                var b = blockData[p+3];
+
+                for (var j = 0; j < c; j++, i++) {
+                    var x = i % width;
+                    var y = parseInt(i / width);
+                    var key = x + "," + y;
+			        cellColors[key] = '#' + $.colpick.rgbToHex({ r: r, g: g, b: b});
+                }
+            }
+        } else {
+            for (var p = 0; p < blockData.length; p += 3)
+            {
+                var x = p / 3 % width;
+                var y = parseInt(p / 3 / width);
+                var key = x + "," + y;
+                cellColors[key] = '#' + $.colpick.rgbToHex({ r: blockData[p], g: blockData[p+1], b: blockData[p+2]});
+            }
+        }
 
 		refreshMatrix();
 	}
@@ -139,13 +157,24 @@ var blockName = "Matrix1";
 		$('#blockOnOffSwitch').val(blockList[blockName].isActive);
 	}
 
+    var useRLE = true;
 	function GetBlockData() {
-        $.get( "/api/overlays/model/" + blockName + "/data", function(data) {
-              blockData = data.data;
-              setColorsFromData();
-              if (!data.isLocked) {
+        var path = "/data";
+        if (useRLE)
+            path += "/rle";
+
+        $.get( "/api/overlays/model/" + blockName + path, function(data) {
+            if ((useRLE) &&
+                (!data.hasOwnProperty('rle') || !data.rle)) {
+                useRLE = false;
+                return;
+            }
+
+            blockData = data.data;
+            setColorsFromData();
+            if (!data.isLocked) {
                 StopBlockDataTimer();
-              }
+            }
         });
 	}
 
@@ -154,7 +183,7 @@ var blockName = "Matrix1";
         if (blockDataTimer != null) {
             clearInterval(blockDataTimer);
         }
-		blockDataTimer = setInterval(function(){GetBlockData()}, 100);
+		blockDataTimer = setInterval(function(){GetBlockData()}, useRLE ? 50 : 100);
 	}
 
 	function StopBlockDataTimer() {
@@ -562,6 +591,11 @@ var blockName = "Matrix1";
 							<option value='90'>90</option>
 							<option value='95'>95</option>
 							<option value='100'>100</option>
+							<option value='120'>120</option>
+							<option value='140'>140</option>
+							<option value='160'>160</option>
+							<option value='180'>180</option>
+							<option value='200'>200</option>
 							</select>
 							</td>
 						</tr>
