@@ -86,6 +86,14 @@ var blockName = "Matrix1";
 			ClearMatrix();
 	}
 
+    function ShowColorPicker() {
+		if ($('#ShowColorPicker').is(':checked')) {
+            $('#colpicker').show();
+        } else {
+            $('#colpicker').hide();
+        }
+    }
+
 	function refreshMatrix() {
 		$('#mmcanvas').drawLayers();
 	}
@@ -352,6 +360,12 @@ var blockName = "Matrix1";
         canvasWidth = <? echo $canvasWidth; ?>;
         canvasHeight = <? echo $canvasHeight; ?>;
 
+        canvasWidth = window.innerWidth - 150;
+        if (canvasWidth < 500)
+            canvasWidth = 500;
+
+        canvasHeight = parseInt(canvasWidth / 1.7);
+
 		if ((blockList[blockName].width > (canvasWidth / 10)) || (blockList[blockName].height > (canvasHeight / 10)))
 			cellsize = 5;
         cellsize = 5;
@@ -480,22 +494,31 @@ var blockName = "Matrix1";
 		</ul>
 
 		<div id= "divSelect" class='ui-tabs-panel matrix-tool-top-panel'>
-			<select id='blockList' onChange='selectBlock(this.value);'></select> - State:
-			<select id='blockOnOffSwitch' onChange='blockState()'>
-				<option value='0'>Disabled</option>
-				<option value='1'>Enabled</option>
-				<option value='2'>Transparent</option>
-				<option value='3'>Transparent RGB</option>
-			</select>
-			<input type='button' value='Clear' onClick='ClearMatrix();' class='buttons'>
-			<input type='button' value='Sync Back' onClick='GetBlockData();' class='buttons'>
 		</div>
 
 		<div id="tab-mmtext" class='matrix-tool-middle-panel'>
 			<div id="divText">
+                <input type='button' value='Place Text' onClick='PlaceText();' class='buttons'>
+                <input type='button' value='Clear' onClick='ClearMatrix();' class='buttons'>
+                <input type='button' value='Sync Back' onClick='GetBlockData();' class='buttons'>
+
 				<table border=0><tr><td valign='top'>
 					<table border=0>
-					<tr><td>Text:</td><td colspan=4><input type='text' maxlength='120' size='55' id='inputText'>&nbsp;<input type='button' value='Go' onClick='PlaceText();'></td></tr>
+                    <tr><td>Model:
+                        </td><td>
+			                <select id='blockList' onChange='selectBlock(this.value);'></select>
+                        </td></tr>
+                    <tr><td>State:
+                        </td><td>
+                            <select id='blockOnOffSwitch' onChange='blockState()'>
+                                <option value='0'>Disabled</option>
+                                <option value='1'>Enabled</option>
+                                <option value='2'>Transparent</option>
+                                <option value='3'>Transparent RGB</option>
+                            </select>
+                        </td></tr>
+
+					<tr><td>Text:</td><td colspan=4><input type='text' maxlength='120' size='55' id='inputText'></td></tr>
 					<tr><td>Font :</td>
 						<td><select id='fontList'>
 							</select></td>
@@ -538,12 +561,11 @@ var blockName = "Matrix1";
 							<option value='70'>70</option>
 							<option value='74'>74</option>
 							<option value='80'>80</option>
-							</select>
+							</select>&nbsp;
+                            Anti-Aliased:&nbsp;
+                            <input type='checkbox' name='antiAliased' id='antiAliased'>
 							</td>
-                            <td width='30px'></td>
-                            <td>Anti-Aliased:</td>
-                            <td><input type='checkbox' name='antiAliased' id='antiAliased'></td>
-						</tr>
+                        </tr>
 					<tr><td>Position:</td>
 						<td><select id='textPosition'>
 							<option value='Center' selected>Center</option>
@@ -552,8 +574,8 @@ var blockName = "Matrix1";
                             <option value='B2T'>Bottom To Top</option>
                             <option value='T2B'>Top To Bottom</option>
 							</select></td>
-						<td width='30px'></td>
-						<td>Scroll&nbsp;Speed (pixels per second):</td>
+                        </tr>
+                    <tr><td>Scroll Speed:</td>
 						<td><select id='scrollSpeed'>
 							<option value='1'>1</option>
 							<option value='2'>2</option>
@@ -596,7 +618,7 @@ var blockName = "Matrix1";
 							<option value='160'>160</option>
 							<option value='180'>180</option>
 							<option value='200'>200</option>
-							</select>
+							</select> (pixels per second)
 							</td>
 						</tr>
 					</table>
@@ -636,25 +658,26 @@ var blockName = "Matrix1";
 -->
 
 		<div id= "divCanvas" class='ui-tabs-panel matrix-tool-bottom-panel'>
-			<table border=0><tr><td valign='top'>
-			<div id="colpicker"></div>
-			</td><td width='30px'></td><td valign='top'>
+			<table border=0>
+            <tr><td valign='top'>
 			<div>
 				<table border=0>
 					<tr><td valign='top'>Pallette:</td>
 						<td><div class='colorButton red' onClick='setColor("#ff0000");'></div>
 							<div class='colorButton green' onClick='setColor("#00ff00");'></div>
 							<div class='colorButton blue' onClick='setColor("#0000ff");'></div>
-						</td>
-					</tr>
-					<tr><td></td>
-						<td><div class='colorButton white' onClick='setColor("#ffffff");'></div>
+						    <div class='colorButton white' onClick='setColor("#ffffff");'></div>
 							<div class='colorButton black' onClick='setColor("#000000");'></div>
 						</td>
 					</tr>
 				</table>
 			</div>
-			</td></tr></table>
+			</td></tr>
+            <tr><td>Show Color Picker: <? PrintSettingCheckbox("Show Color Picker", "ShowColorPicker", 0, 0, "1", "0", "fpp-matrixtools", "ShowColorPicker"); ?></td></tr>
+            <tr><td valign='top'>
+                <div id="colpicker"></div>
+			</td></tr>
+            </table>
 			<br>
 			<table border=0>
 				<tr><td>Matrix</td>
@@ -668,7 +691,6 @@ var blockName = "Matrix1";
 					<td>Large Pen: <? PrintSettingCheckbox("Large Pen", "LargePen", 0, 0, "1", "0", "fpp-matrixtools", ""); ?></td>
 				</tr>
 			</table>
-			<center>
 				<table>
 					<tr><td>
 						<canvas id='mmcanvas' class='matrix' width='<? echo $canvasWidth + 1; ?>' height=<? echo $canvasHeight + 1; ?>'></canvas>
@@ -680,7 +702,6 @@ var blockName = "Matrix1";
 						<div id='log'></div>
 					</td></tr>
 				</table>
-			</center>
 		</div>
 
 	</div>
@@ -702,6 +723,7 @@ var blockName = "Matrix1";
 		}
 	});
 
+    ShowColorPicker();
 	GetBlockList();
     GetFontList();
 
