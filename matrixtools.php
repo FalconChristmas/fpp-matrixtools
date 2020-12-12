@@ -56,6 +56,10 @@ $canvasHeight = 400;
 	width: 20px;
 }
 
+#currentColor {
+    border: 2px solid #000000;
+}
+
 </style>
 
 <script type="text/javascript">
@@ -65,8 +69,8 @@ var blockName = "Matrix1";
 
     if ( ! window.console ) console = { log: function(){} };
 
-	var currentColor = '#ff0000';
 	var cellColors = {};
+	var currentColor = '#ff0000';
 
 	function blockState() {
 		var state = $('#blockOnOffSwitch').val();
@@ -101,6 +105,10 @@ var blockName = "Matrix1";
 	function setColor(color) {
 		if (color.substring(0,1) != '#')
 			color = '#' + color;
+
+        pluginSettings['color'] = color;
+        SetPluginSetting('fpp-matrixtools', 'color', color, 0, 0);
+        $('#currentColor').css('background-color', color);
 
 		currentColor = color;
 		$('#colpicker').colpickSetColor(color);
@@ -157,7 +165,12 @@ var blockName = "Matrix1";
 		refreshMatrix();
 	}
 
-	function selectBlock(name) {
+	function selectBlock(name, save = true) {
+        if (save) {
+            pluginSettings['model'] = name;
+            SetPluginSetting('fpp-matrixtools', 'model', name, 0, 0);
+        }
+
 		blockName = name;
 		GetBlockData();
 		InitCanvas();
@@ -201,13 +214,23 @@ var blockName = "Matrix1";
 		}
 	}
 
+    function FontChanged() {
+        var font = $('#fontList').val();
+        pluginSettings['font'] = font;
+        SetPluginSetting('fpp-matrixtools', 'font', font, 0, 0);
+    }
+
 	function GetFontList() {
         $.get( "/api/overlays/fonts", function(data) {
               $('#fontList option').remove();
               data.forEach( function (item, index) {
                   var key = item;
 			      var text = key.replace(/[^-a-zA-Z0-9]/g, '');
-                  $('#fontList').append("<option value='" + key + "'>" + text + "</option>");
+                  var option = "<option value='" + key + "'";
+                  if (pluginSettings['font'] == key)
+                    option += ' selected';
+                  option += ">" + text + "</option>";
+                  $('#fontList').append(option);
               });
            });
 	}
@@ -231,9 +254,16 @@ var blockName = "Matrix1";
                     }
                            
                     blockList[key] = item;
-                    $('#blockList').append("<option value='" + key + "'>" + key + " (" + blockList[key].width + "x" + blockList[key].height + ")</option>");
+
+                    var option = "<option value='" + key + "'";
+                    if (pluginSettings['model'] == key) {
+                        option += ' selected';
+                        blockName = key;
+                    }
+                    option += ">" + key + " (" + blockList[key].width + "x" + blockList[key].height + ")</option>";
+                    $('#blockList').append(option);
               });
-              selectBlock(blockName);
+              selectBlock(blockName, false);
         });
 	}
 
@@ -506,7 +536,7 @@ var blockName = "Matrix1";
 					<table border=0>
                     <tr><td>Model:
                         </td><td>
-			                <select id='blockList' onChange='selectBlock(this.value);'></select>
+			                <select id='blockList' onChange='selectBlock(this.value, true);'></select>
                         </td></tr>
                     <tr><td>State:
                         </td><td>
@@ -520,105 +550,60 @@ var blockName = "Matrix1";
 
 					<tr><td>Text:</td><td colspan=4><input type='text' maxlength='120' size='55' id='inputText'></td></tr>
 					<tr><td>Font :</td>
-						<td><select id='fontList'>
+						<td><select id='fontList' onChange='FontChanged();'>
 							</select></td>
 						<td width='30px'></td>
 						</tr>
 					<tr><td>Font&nbsp;Size:</td>
-						<td><select id='fontSize'>
-							<option value='5'>5</option>
-							<option value='6'>6</option>
-							<option value='7'>7</option>
-							<option value='8'>8</option>
-							<option value='9'>9</option>
-							<option value='10' selected>10</option>
-							<option value='12'>12</option>
-							<option value='14'>14</option>
-							<option value='16'>16</option>
-							<option value='18'>18</option>
-							<option value='20'>20</option>
-							<option value='22'>22</option>
-							<option value='24'>24</option>
-							<option value='26'>26</option>
-							<option value='28'>28</option>
-							<option value='30'>30</option>
-							<option value='32'>32</option>
-							<option value='34'>34</option>
-							<option value='36'>36</option>
-							<option value='38'>38</option>
-							<option value='40'>40</option>
-							<option value='42'>42</option>
-							<option value='44'>44</option>
-							<option value='46'>46</option>
-							<option value='48'>48</option>
-							<option value='50'>50</option>
-							<option value='52'>52</option>
-							<option value='54'>54</option>
-							<option value='56'>56</option>
-							<option value='58'>58</option>
-							<option value='60'>60</option>
-							<option value='64'>64</option>
-							<option value='70'>70</option>
-							<option value='74'>74</option>
-							<option value='80'>80</option>
-							</select>&nbsp;
+						<td>
+<?
+$fontSizes = array(
+'5' => '5', '6' => '6', '7' => '7', '8' => '8', '9' => '9', '10' => '10',
+'12' => '12', '14' => '14', '16' => '16', '18' => '18', '20' => '20',
+'22' => '22', '24' => '24', '26' => '26', '28' => '28', '30' => '30',
+'32' => '32', '34' => '34', '36' => '36', '38' => '38', '40' => '40',
+'42' => '42', '44' => '44', '46' => '46', '48' => '48', '50' => '50',
+'52' => '52', '54' => '54', '56' => '56', '58' => '58', '60' => '60',
+'64' => '64', '70' => '70', '74' => '74', '80' => '80',
+);
+PrintSettingSelect('Font Size', 'fontSize', 0, 0, '10', $fontSizes, 'fpp-matrixtools');
+?>
+							&nbsp;
                             Anti-Aliased:&nbsp;
-                            <input type='checkbox' name='antiAliased' id='antiAliased'>
+					        <? PrintSettingCheckbox("Anti-Alias", "antiAliased", 0, 0, "1", "0", "fpp-matrixtools"); ?>
 							</td>
                         </tr>
 					<tr><td>Position:</td>
-						<td><select id='textPosition'>
-							<option value='Center' selected>Center</option>
-                            <option value='R2L'>Right To Left</option>
-                            <option value='L2R'>Left To Right</option>
-                            <option value='B2T'>Bottom To Top</option>
-                            <option value='T2B'>Top To Bottom</option>
-							</select></td>
+						<td>
+<?
+$textPositions = array(
+'Center' => 'Center',
+'Right to Left' => 'R2L',
+'Left to Right' => 'L2R',
+'Bottom to Top' => 'B2T',
+'Top to Bottom' => 'T2B',
+);
+PrintSettingSelect('Position', 'textPosition', 0, 0, 'Center', $textPositions, 'fpp-matrixtools');
+?>
+							</td>
                         </tr>
                     <tr><td>Scroll Speed:</td>
-						<td><select id='scrollSpeed'>
-							<option value='1'>1</option>
-							<option value='2'>2</option>
-							<option value='3'>3</option>
-							<option value='4'>4</option>
-							<option value='5'>5</option>
-							<option value='6'>6</option>
-							<option value='7'>7</option>
-							<option value='8'>8</option>
-							<option value='9'>9</option>
-							<option value='10' selected>10</option>
-							<option value='11'>11</option>
-							<option value='12'>12</option>
-							<option value='13'>13</option>
-							<option value='14'>14</option>
-							<option value='15'>15</option>
-							<option value='16'>16</option>
-							<option value='17'>17</option>
-							<option value='18'>18</option>
-							<option value='19'>19</option>
-							<option value='20'>20</option>
-							<option value='25'>25</option>
-							<option value='30'>30</option>
-							<option value='35'>35</option>
-							<option value='40'>40</option>
-							<option value='45'>45</option>
-							<option value='50'>50</option>
-							<option value='55'>55</option>
-							<option value='60'>60</option>
-							<option value='65'>65</option>
-							<option value='70'>70</option>
-							<option value='75'>75</option>
-							<option value='80'>80</option>
-							<option value='85'>85</option>
-							<option value='90'>90</option>
-							<option value='95'>95</option>
-							<option value='100'>100</option>
-							<option value='120'>120</option>
-							<option value='140'>140</option>
-							<option value='160'>160</option>
-							<option value='180'>180</option>
-							<option value='200'>200</option>
-							</select> (pixels per second)
+						<td>
+<?
+$scrollSpeeds = array(
+'1' => '1', '2' => '2', '3' => '3', '4' => '4', '5' => '5',
+'6' => '6', '7' => '7', '8' => '8', '9' => '9', '10' => '10',
+'11' => '11', '12' => '12', '13' => '13', '14' => '14', '15' => '15',
+'16' => '16', '17' => '17', '18' => '18', '19' => '19', '20' => '20',
+'25' => '25', '30' => '30', '35' => '35', '40' => '40', '45' => '45',
+'50' => '50', '55' => '55', '60' => '60', '65' => '65', '70' => '70',
+'75' => '75', '80' => '80', '85' => '85', '90' => '90', '95' => '95',
+'100' => '100', '120' => '120', '140' => '140', '160' => '160', '180' => '180',
+'200' => '200'
+);
+PrintSettingSelect('Scroll Speed', 'scrollSpeed', 0, 0, '10', $scrollSpeeds, 'fpp-matrixtools');
+?>
+							(pixels per second)
 							</td>
 						</tr>
 					</table>
@@ -670,25 +655,26 @@ var blockName = "Matrix1";
 							<div class='colorButton black' onClick='setColor("#000000");'></div>
 						</td>
 					</tr>
+                    <tr><td>Current Color:</td><td><span id='currentColor'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></td></tr>
+            <tr><td colspan='2'>Show Color Picker: <? PrintSettingCheckbox("Show Color Picker", "ShowColorPicker", 0, 0, "1", "0", "fpp-matrixtools", "ShowColorPicker"); ?></td></tr>
+            <tr><td valign='top' colspan='2'>
+                <div id="colpicker"></div>
+			</td></tr>
 				</table>
 			</div>
-			</td></tr>
-            <tr><td>Show Color Picker: <? PrintSettingCheckbox("Show Color Picker", "ShowColorPicker", 0, 0, "1", "0", "fpp-matrixtools", "ShowColorPicker"); ?></td></tr>
-            <tr><td valign='top'>
-                <div id="colpicker"></div>
 			</td></tr>
             </table>
 			<br>
 			<table border=0>
 				<tr><td>Matrix</td>
 					<td width='40px'>&nbsp;</td>
-					<td>Show Text: <? PrintSettingCheckbox("Show Text Effect", "ShowTextEffect", 0, 0, "1", "0", "fpp-matrixtools"); ?></td>
+					<td>Large Pen: <? PrintSettingCheckbox("Large Pen", "LargePen", 0, 0, "1", "0", "fpp-matrixtools", ""); ?></td>
 					<td width='40px'>&nbsp;</td>
 					<td>Round Pixels: <? PrintSettingCheckbox("Show Round Pixels", "ShowRoundPixels", 0, 0, "1", "0", "fpp-matrixtools", "refreshMatrix"); ?></td>
+					<td width='40px'>&nbsp;</td>
+					<td>Show Text: <? PrintSettingCheckbox("Show Text Effect", "ShowTextEffect", 0, 0, "1", "0", "fpp-matrixtools"); ?></td>
 					<td class='showGridWrapper' width='40px'>&nbsp;</td>
 					<td class='showGridWrapper'>Show Grid: <? PrintSettingCheckbox("Show Grid", "ShowGrid", 0, 0, "1", "0", "fpp-matrixtools", "refreshMatrix"); ?></td>
-					<td width='40px'>&nbsp;</td>
-					<td>Large Pen: <? PrintSettingCheckbox("Large Pen", "LargePen", 0, 0, "1", "0", "fpp-matrixtools", ""); ?></td>
 				</tr>
 			</table>
 				<table>
@@ -722,6 +708,11 @@ var blockName = "Matrix1";
 				setColor('#'+hex);
 		}
 	});
+
+    if (pluginSettings.hasOwnProperty('color') && pluginSettings['color'] != '') {
+        currentColor = pluginSettings['color'];
+        $('#currentColor').css('background-color', currentColor);
+    }
 
     ShowColorPicker();
 	GetBlockList();
