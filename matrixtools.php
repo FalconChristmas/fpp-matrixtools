@@ -350,7 +350,8 @@ var blockName = "Matrix1";
 			FontSize: parseInt($('#fontSize').val()),
 			Position: $('#textPosition').val(),
 			PixelsPerSecond: parseInt($('#scrollSpeed').val()),
-            AntiAlias: $('#antiAliased').prop('checked')
+            AntiAlias: $('#antiAliased').prop('checked'),
+            AutoEnable: $('#autoEnable').prop('checked')
 			};
 
 		if ($('#ShowTextEffect').is(':checked'))
@@ -546,6 +547,9 @@ var blockName = "Matrix1";
                                 <option value='2'>Transparent</option>
                                 <option value='3'>Transparent RGB</option>
                             </select>
+                            &nbsp;
+                            Auto-Enable:&nbsp;
+					        <? PrintSettingCheckbox("Auto-Enable", "autoEnable", 0, 0, "1", "0", "fpp-matrixtools"); ?>
                         </td></tr>
 
 					<tr><td>Text:</td><td colspan=4><input type='text' maxlength='120' size='55' id='inputText'></td></tr>
