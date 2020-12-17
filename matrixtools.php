@@ -552,7 +552,7 @@ var blockName = "Matrix1";
 					        <? PrintSettingCheckbox("Auto-Enable", "autoEnable", 0, 0, "1", "0", "fpp-matrixtools"); ?>
                         </td></tr>
 
-					<tr><td>Text:</td><td colspan=4><input type='text' maxlength='120' size='55' id='inputText'></td></tr>
+					<tr><td>Text:</td><td colspan=4><textarea cols='64' rows='2' id='inputText'></textarea></td></tr>
 					<tr><td>Font :</td>
 						<td><select id='fontList' onChange='FontChanged();'>
 							</select></td>
