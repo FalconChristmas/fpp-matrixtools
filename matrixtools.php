@@ -102,7 +102,7 @@ var blockName = "Matrix1";
 		$('#mmcanvas').drawLayers();
 	}
 
-	function setColor(color) {
+	function setColor(color, updateColpicker = true) {
 		if (color.substring(0,1) != '#')
 			color = '#' + color;
 
@@ -111,7 +111,9 @@ var blockName = "Matrix1";
         $('#currentColor').css('background-color', color);
 
 		currentColor = color;
-		$('#colpicker').colpickSetColor(color);
+
+        if (updateColpicker)
+		    $('#colpicker').colpickSetColor(color);
 
 		if ($('#AutoFill').is(':checked'))
 			FillMatrix();
@@ -702,14 +704,17 @@ PrintSettingSelect('Scroll Speed', 'scrollSpeed', 0, 0, '10', $scrollSpeeds, 'fp
 
 	$("#matrixTabs").tabs({active: 0, cache: true, spinner: "", fx: { opacity: 'toggle', height: 'toggle' } });
 
+    var colpickTimer = null;
 	$('#colpicker').colpick({
 		flat: true,
 		layout: 'rgbhex',
 		color: '#ff0000',
 		submit: false,
 		onChange: function(hsb,hex,rgb,el,bySetColor) {
-			if (!bySetColor)
-				setColor('#'+hex);
+            if (colpickTimer != null)
+                clearTimeout(colpickTimer);
+
+            colpickTimer = setTimeout(function() { setColor('#'+hex, false); }, 500);
 		}
 	});
 
