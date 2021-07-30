@@ -63,7 +63,6 @@ function GetModelData($host, $model) {
 }
 
 function SetModelState($host, $model, $state) {
-    logEntry("HELP!!!! " . $state);
     $data = "{\"State\": ". $state . "}";
     if ($host == "") {
         $host = "localhost";
@@ -185,9 +184,6 @@ function DisplayTextOnModel($host, $model, $msg, $Position, $Font, $FontSize, $c
     echo json_encode($data);
     $data = json_encode($data);
     
-logEntry($host);
-logEntry($data);
-
     if ($host == "") {
         $host = "localhost";
     }
