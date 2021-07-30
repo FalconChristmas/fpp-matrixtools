@@ -1,6 +1,9 @@
 <?
 
 function GetModels($host) {
+    if ($host == "") {
+        $host = "localhost";
+    }
     $ch = curl_init("http://" . $host . "/api/overlays/models");
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_HEADER, 0);
@@ -10,6 +13,9 @@ function GetModels($host) {
 }
 
 function GetFonts($host) {
+    if ($host == "") {
+        $host = "localhost";
+    }
     $ch = curl_init("http://" . $host . "/api/overlays/fonts");
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_HEADER, 0);
@@ -19,7 +25,11 @@ function GetFonts($host) {
 }
 
 function GetModel($host, $model) {
-    $ch = curl_init("http://" . $host . "/api/overlays/model/" . $model);
+    if ($host == "") {
+        $host = "localhost";
+    }
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, "http://" . $host . "/api/overlays/model/" . curl_escape($ch, $model));
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_HEADER, 0);
     $data = curl_exec($ch);
@@ -28,7 +38,11 @@ function GetModel($host, $model) {
 }
 
 function ClearModel($host, $model) {
-    $ch = curl_init("http://" . $host . "/api/overlays/model/" . $model . "/clear");
+    if ($host == "") {
+        $host = "localhost";
+    }
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, "http://" . $host . "/api/overlays/model/" . curl_escape($ch, $model) . "/clear");
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_HEADER, 0);
     $data = curl_exec($ch);
@@ -36,7 +50,11 @@ function ClearModel($host, $model) {
 }
 
 function GetModelData($host, $model) {
-    $ch = curl_init("http://" . $host . "/api/overlays/model/" . $model. "/data");
+    if ($host == "") {
+        $host = "localhost";
+    }
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, "http://" . $host . "/api/overlays/model/" . curl_escape($ch, $model) . "/data");
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_HEADER, 0);
     $data = curl_exec($ch);
@@ -45,8 +63,14 @@ function GetModelData($host, $model) {
 }
 
 function SetModelState($host, $model, $state) {
+    logEntry("HELP!!!! " . $state);
     $data = "{\"State\": ". $state . "}";
-    $ch = curl_init("http://" . $host . "/api/overlays/model/" . $model. "/state");
+    if ($host == "") {
+        $host = "localhost";
+    }
+    $ch = curl_init();
+
+    curl_setopt($ch, CURLOPT_URL, "http://" . $host . "/api/overlays/model/" . curl_escape($ch, $model) . "/state");
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PUT");
     curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json','Content-Length: ' . strlen($data)));
@@ -61,7 +85,11 @@ function FillModel($host, $model, $R, $G, $B) {
     $data = array('RGB'=>$rgb);
     $data = json_encode($data);
 
-    $ch = curl_init("http://" . $host . "/api/overlays/model/" . $model. "/fill");
+    if ($host == "") {
+        $host = "localhost";
+    }
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, "http://" . $host . "/api/overlays/model/" . curl_escape($ch, $model) . "/fill");
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PUT");
     curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json','Content-Length: ' . strlen($data)));
@@ -75,7 +103,11 @@ function SetModelPixel($host, $model, $X, $Y, $R, $G, $B) {
     $data = array('X'=>$X, 'Y'=>$Y, 'RGB'=>$rgb);
     $data = json_encode($data);
 
-    $ch = curl_init("http://" . $host . "/api/overlays/model/" . $model. "/pixel");
+    if ($host == "") {
+        $host = "localhost";
+    }
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, "http://" . $host . "/api/overlays/model/" . curl_escape($ch, $model) . "/pixel");
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PUT");
     curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json','Content-Length: ' . strlen($data)));
@@ -153,6 +185,12 @@ function DisplayTextOnModel($host, $model, $msg, $Position, $Font, $FontSize, $c
     echo json_encode($data);
     $data = json_encode($data);
     
+logEntry($host);
+logEntry($data);
+
+    if ($host == "") {
+        $host = "localhost";
+    }
     $ch = curl_init("http://" . $host . "/api/command");
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
