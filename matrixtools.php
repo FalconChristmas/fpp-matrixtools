@@ -1,4 +1,6 @@
 <?
+include_once('fppversion.php');
+
 $canvasWidth = 1000;
 $canvasHeight = 400;
 ?>
@@ -81,7 +83,35 @@ var blockName = "Matrix1";
                data: '{"State": ' + state + '}', // data as js object
                success: function() {}
                });
-	}
+    }
+
+    function SaveImage() {
+        var dt = new Date();
+        var defaultName = blockName + "-"
+            + dt.getFullYear()
+            + PadLeft(dt.getMonth(), '0', 2)
+            + PadLeft(dt.getDate(), '0', 2)
+            + '-'
+            + PadLeft(dt.getHours(), '0', 2)
+            + PadLeft(dt.getMinutes(), '0', 2)
+            + PadLeft(dt.getSeconds(), '0', 2)
+            + '.png';
+        var filename = prompt("Image Filename (include .jpg/.png extension):", defaultName);
+        if (filename != null) {
+            $.ajax({
+                   url: "/api/overlays/model/" + blockName + "/save",
+                   method: 'PUT',
+                   contentType: "application/json",
+                   data: '{"File": "' + filename + '"}', // data as js object
+                   success: function() {
+                       $.jGrowl("Image Saved", { themeState: 'success' });
+                   },
+                   failure: function() {
+                       $.jGrowl("Error Saving Image", { themeState: 'danger' });
+                   }
+            });
+        }
+    }
 
 	function autoFillChanged() {
 		if ($('#AutoFill').is(':checked'))
@@ -515,8 +545,29 @@ var blockName = "Matrix1";
 </script>
 
 
+<table border=0>
+    <tr><td>Model:</td>
+        <td><select id='blockList' onChange='selectBlock(this.value, true);'></select></td>
+        </tr>
+    <tr><td>State:</td>
+        <td><select id='blockOnOffSwitch' onChange='blockState()'>
+                <option value='0'>Disabled</option>
+                <option value='1'>Enabled</option>
+                <option value='2'>Transparent</option>
+                <option value='3'>Transparent RGB</option>
+            </select></td>
+        </tr>
+    <tr><td><input type='button' value='Clear' onClick='ClearMatrix();' class='buttons'>
+<?
+if (getFPPVersionFloat() >= 6.0)
+    echo "<input type='button' value='Save Image' onClick='SaveImage();' class='buttons' id='saveButton'>\n";
+?>
+            </td>
+        </tr>
+</table>
+<br>
+
 <div class='fppTabs'>
-	<div class='title'>Matrix Tools</div>
 	<div id="matrixTabs">
 		<ul>
 			<li><a href="#tab-mmtext">Text</a></li>
@@ -527,32 +578,18 @@ var blockName = "Matrix1";
 		</ul>
 
 		<div id= "divSelect" class='ui-tabs-panel matrix-tool-top-panel'>
-		</div>
+        </div>
 
 		<div id="tab-mmtext" class='matrix-tool-middle-panel'>
 			<div id="divText">
                 <input type='button' value='Place Text' onClick='PlaceText();' class='buttons'>
-                <input type='button' value='Clear' onClick='ClearMatrix();' class='buttons'>
                 <input type='button' value='Sync Back' onClick='GetBlockData();' class='buttons'>
 
 				<table border=0><tr><td valign='top'>
 					<table border=0>
-                    <tr><td>Model:
-                        </td><td>
-			                <select id='blockList' onChange='selectBlock(this.value, true);'></select>
-                        </td></tr>
-                    <tr><td>State:
-                        </td><td>
-                            <select id='blockOnOffSwitch' onChange='blockState()'>
-                                <option value='0'>Disabled</option>
-                                <option value='1'>Enabled</option>
-                                <option value='2'>Transparent</option>
-                                <option value='3'>Transparent RGB</option>
-                            </select>
-                            &nbsp;
-                            Auto-Enable:&nbsp;
-					        <? PrintSettingCheckbox("Auto-Enable", "autoEnable", 0, 0, "1", "0", "fpp-matrixtools"); ?>
-                        </td></tr>
+                    <tr><td>Auto-Enable:</td>
+					    <td><? PrintSettingCheckbox("Auto-Enable", "autoEnable", 0, 0, "1", "0", "fpp-matrixtools"); ?>
+                            </td></tr>
 
 					<tr><td>Text:</td><td colspan=4><textarea cols='64' rows='2' id='inputText'></textarea></td></tr>
 					<tr><td>Font :</td>
