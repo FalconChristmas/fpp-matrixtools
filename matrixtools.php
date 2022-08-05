@@ -120,6 +120,13 @@ var blockName = "Matrix1";
 			ClearMatrix();
 	}
 
+    function ForceShowColorPicker() {
+		if (!$('#ShowColorPicker').is(':checked')) {
+            $('#ShowColorPicker').prop('checked', true);
+            $('#colpicker').show();
+        }
+    }
+
     function ShowColorPicker() {
 		if ($('#ShowColorPicker').is(':checked')) {
             $('#colpicker').show();
@@ -545,42 +552,74 @@ var blockName = "Matrix1";
 </script>
 
 
-<table border=0>
-    <tr><td>Model:</td>
-        <td><select id='blockList' onChange='selectBlock(this.value, true);'></select></td>
-        </tr>
-    <tr><td>State:</td>
-        <td><select id='blockOnOffSwitch' onChange='blockState()'>
-                <option value='0'>Disabled</option>
-                <option value='1'>Enabled</option>
-                <option value='2'>Transparent</option>
-                <option value='3'>Transparent RGB</option>
-            </select></td>
-        </tr>
-    <tr><td><input type='button' value='Clear' onClick='ClearMatrix();' class='buttons'>
-<?
-if (getFPPVersionFloat() >= 6.0)
-    echo "<input type='button' value='Save Image' onClick='SaveImage();' class='buttons' id='saveButton'>\n";
-?>
-            </td>
-        </tr>
-</table>
-<br>
-
-<div class='fppTabs'>
 	<div id="matrixTabs">
-		<ul>
-			<li><a href="#tab-mmtext">Text</a></li>
-			<li><a href="#tab-mmdraw">Draw</a></li>
+		<ul class='nav nav-pills pageContent-tabs' role='tablist'>
+			<li class='nav-item'>
+                <a class='nav-link active' data-toggle='tab' role='tab' aria-selected='true' aria-controls='tab-mmtext' href="#tab-mmtext">Text</a>
+            </li>
+			<li class='nav-item'>
+                <a class='nav-link' data-toggle='tab' role='tab' aria-selected='true' aria-controls='tab-mmdraw' href="#tab-mmdraw">Draw</a>
+            </li>
 <!--
 			<li><a href="#tab-mmimage">Image</a></li>
 -->
 		</ul>
 
+        <div style='float: left; padding: 0px 50px 20px 0px;'>
+        <table border=0>
+            <tr><td>Model:</td>
+                <td><select id='blockList' onChange='selectBlock(this.value, true);'></select></td>
+            <tr><td>State:</td>
+                <td><select id='blockOnOffSwitch' onChange='blockState()'>
+                        <option value='0'>Disabled</option>
+                        <option value='1'>Enabled</option>
+                        <option value='2'>Transparent</option>
+                        <option value='3'>Transparent RGB</option>
+                    </select></td>
+                </tr>
+            <tr><td colspan='2'><input type='button' value='Clear' onClick='ClearMatrix();' class='buttons'>
+					<input type='button' value='Fill' onClick='FillMatrix();' class='buttons'>
+        <?
+        if (getFPPVersionFloat() >= 6.0)
+            echo "<input type='button' value='Save Image' onClick='SaveImage();' class='buttons' id='saveButton'>\n";
+        ?>
+                    </td>
+                </tr>
+        </table>
+        </div>
+
+        <div style='float: left; padding: 0px 50px 20px 0px;'>
+        <table border=0>
+			<tr><td>Pallette:</td>
+				<td><div class='colorButton red' onClick='setColor("#ff0000");'></div>
+					<div class='colorButton green' onClick='setColor("#00ff00");'></div>
+					<div class='colorButton blue' onClick='setColor("#0000ff");'></div>
+				    <div class='colorButton white' onClick='setColor("#ffffff");'></div>
+					<div class='colorButton black' onClick='setColor("#000000");'></div>
+				</td>
+                </tr>
+            <tr><td>Current Color:</td><td><span id='currentColor' onClick="ForceShowColorPicker();" style='cursor: pointer;'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></td></tr>
+                </tr>
+            <tr><td>Show Color Picker:</td>
+                <td><? PrintSettingCheckbox("Show Color Picker", "ShowColorPicker", 0, 0, "1", "0", "fpp-matrixtools", "ShowColorPicker"); ?></td>
+                </tr>
+            <tr><td>Auto-Fill:</td>
+                <td><? PrintSettingCheckbox("Auto Fill Block", "AutoFill", 0, 0, "1", "0", "fpp-matrixtools", "autoFillChanged"); ?></td>
+                </tr>
+        </table>
+        </div>
+
+        <div style='float: left;'>
+            <div id="colpicker"></div>
+        </div>
+        <div style='clear: both;'></div>
+        <br>
+
 		<div id= "divSelect" class='ui-tabs-panel matrix-tool-top-panel'>
         </div>
 
-		<div id="tab-mmtext" class='matrix-tool-middle-panel'>
+    <div class='tab-content'>
+		<div id="tab-mmtext" class='matrix-tool-middle-panel tab-pane fade show active' role='tabpanel'>
 			<div id="divText">
                 <input type='button' value='Place Text' onClick='PlaceText();' class='buttons'>
                 <input type='button' value='Sync Back' onClick='GetBlockData();' class='buttons'>
@@ -657,14 +696,10 @@ PrintSettingSelect('Scroll Speed', 'scrollSpeed', 0, 0, '10', $scrollSpeeds, 'fp
 			</div>
 		</div>
 
-		<div id="tab-mmdraw" class='matrix-tool-middle-panel'>
+		<div id="tab-mmdraw" class='matrix-tool-middle-panel tab-pane fade show active' role='tabpanel'>
 			<div id= "divDraw">
 					<table border=0><tr><td valign='top'>
 						<table border=0>
-						<tr><td>Block Fill:</td>
-							<td><input type='button' value='Fill' onClick='FillMatrix();' class='buttons'></td>
-							</tr>
-						<tr><td>Auto-Fill: <? PrintSettingCheckbox("Auto Fill Block", "AutoFill", 0, 0, "1", "0", "fpp-matrixtools", "autoFillChanged"); ?></td>
 						</table>
 					</table>
 			</div>
@@ -690,19 +725,6 @@ PrintSettingSelect('Scroll Speed', 'scrollSpeed', 0, 0, '10', $scrollSpeeds, 'fp
             <tr><td valign='top'>
 			<div>
 				<table border=0>
-					<tr><td valign='top'>Pallette:</td>
-						<td><div class='colorButton red' onClick='setColor("#ff0000");'></div>
-							<div class='colorButton green' onClick='setColor("#00ff00");'></div>
-							<div class='colorButton blue' onClick='setColor("#0000ff");'></div>
-						    <div class='colorButton white' onClick='setColor("#ffffff");'></div>
-							<div class='colorButton black' onClick='setColor("#000000");'></div>
-						</td>
-					</tr>
-                    <tr><td>Current Color:</td><td><span id='currentColor'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></td></tr>
-            <tr><td colspan='2'>Show Color Picker: <? PrintSettingCheckbox("Show Color Picker", "ShowColorPicker", 0, 0, "1", "0", "fpp-matrixtools", "ShowColorPicker"); ?></td></tr>
-            <tr><td valign='top' colspan='2'>
-                <div id="colpicker"></div>
-			</td></tr>
 				</table>
 			</div>
 			</td></tr>
@@ -732,14 +754,12 @@ PrintSettingSelect('Scroll Speed', 'scrollSpeed', 0, 0, '10', $scrollSpeeds, 'fp
 					</td></tr>
 				</table>
 		</div>
+	</div>
 
 	</div>
-</div>
 
 
 <script>
-
-	$("#matrixTabs").tabs({active: 0, cache: true, spinner: "", fx: { opacity: 'toggle', height: 'toggle' } });
 
     var colpickTimer = null;
 	$('#colpicker').colpick({
