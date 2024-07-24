@@ -15,6 +15,12 @@
             },
             {
                 "minFPPVersion": "2.7",
+                "maxFPPVersion": "7.99",
+                "branch": "REST-API",
+                "sha": ""
+            },
+            {
+                "minFPPVersion": "8.0",
                 "maxFPPVersion": "0",
                 "branch": "REST-API",
                 "sha": ""
