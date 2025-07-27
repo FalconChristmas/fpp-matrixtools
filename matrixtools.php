@@ -1,8 +1,8 @@
 <?
 include_once('fppversion.php');
 
-$canvasWidth = 1000;
-$canvasHeight = 400;
+$canvasWidth = 1400;
+$canvasHeight = 800;
 ?>
 <style>
 .matrix-tool-top-panel {
@@ -415,8 +415,8 @@ var blockName = "Matrix1";
 	var mouseDown = 0;
 
 	function InitCanvas() {
-        if ((blockList[blockName].width > 400) ||
-            (blockList[blockName].height > 400)) {
+        if ((blockList[blockName].width > 1400) ||
+            (blockList[blockName].height > 800)) {
             $('#mmcanvas').hide();
             $('#warning').html('Model too large to display.');
             $('#warning').show();
@@ -533,10 +533,14 @@ var blockName = "Matrix1";
 						y = y * cellsize + 1;
 
 						ctx.beginPath();
-						if ((halfCellSize) && (quarterCellSize) && (pluginSettings['ShowRoundPixels'] == "1")) {
-							ctx.arc(x + halfCellSize, y + halfCellSize, quarterCellSize, 0, 2 * Math.PI, false);
+						if (cellsize > 2) {
+							if ((halfCellSize) && (quarterCellSize) && (pluginSettings['ShowRoundPixels'] == "1")) {
+								ctx.arc(x + halfCellSize, y + halfCellSize, quarterCellSize, 0, 2 * Math.PI, false);
+							} else {
+								ctx.rect(x, y, cellsize - 2, cellsize - 2);
+							}
 						} else {
-							ctx.rect(x, y, cellsize - 2, cellsize - 2);
+							ctx.rect(x, y, cellsize, cellsize);
 						}
 						ctx.fillStyle = cellColors[key];
 						ctx.fill();
