@@ -1,9 +1,10 @@
-<style>
-canvas.matrix {
-	height: 371px;
-	width: 741px;
-}
+<?
+include_once('fppversion.php');
 
+$canvasWidth = 1400;
+$canvasHeight = 800;
+?>
+<style>
 .matrix-tool-top-panel {
 	padding-bottom: 0px !important;
 }
@@ -57,99 +58,60 @@ canvas.matrix {
 	width: 20px;
 }
 
+#currentColor {
+    border: 2px solid #000000;
+}
+
 </style>
 
 <script type="text/javascript">
-var wsIsOpen = 0;
-var ws;
 var blockList = {};
 var blockData = [];
 var blockName = "Matrix1";
-var dataIsPending = 0;
-var pendingData;
-var penWidth = 1;
 
-if ( ! window.console ) console = { log: function(){} };
+    if ( ! window.console ) console = { log: function(){} };
 
-function WSGetBlockData(data)
-{
-	var dbws = new WebSocket("ws://<? echo $_SERVER['HTTP_HOST']; ?>:32321/echo");
-	dbws.onopen = function()
-	{
-		dbws.send(JSON.stringify(data));
-	}
-	dbws.onmessage = function(evt)
-	{
-		blockData = JSON.parse(evt.data).Result;
-		setColorsFromData();
-	}
-}
-
-function SyncBackDisplay() {
-	WSGetBlockData( { Command: "GetBlockData", BlockName: blockName } );
-}
-
-function SendWSCommand(data)
-{
-	if (!wsIsOpen)
-	{
-		dataIsPending = 1;
-		pendingData = data;
-
-		ws = new WebSocket("ws://<? echo $_SERVER['HTTP_HOST']; ?>:32321/echo");
-		ws.onopen = function()
-		{
-			wsIsOpen = 1;
-			if (dataIsPending)
-			{
-				dataIsPending = 0;
-				ws.send(JSON.stringify(pendingData));
-			}
-		}
-		ws.onmessage = function(evt)
-		{
-			var data = JSON.parse(evt.data);
-			if (data.Command == "GetBlockList") {
-				blockList = JSON.parse(evt.data).Result;
-				ProcessBlockListResponse();
-			} else if (data.Command == "GetBlockData") {
-				var parsedData = JSON.parse(evt.data)
-				blockData = parsedData.Result;
-				setColorsFromData();
-				if (!parsedData.Locked)
-					StopBlockDataTimer();
-			} else if (data.Command == "GetFontList") {
-				ProcessFontListResponse(JSON.parse(evt.data).Result);
-			}
-		},
-     	ws.onclose = function()
-		{ 
-		 	wsIsOpen = 0;
-		};
-	} else {
-		ws.send(JSON.stringify(data));
-	}
-}
-
-</script>
-
-<script>
-	var currentColor = '#ff0000';
 	var cellColors = {};
-
-	function testModeOn() {
-		SendWSCommand({ Command: "SetTestMode", State: 1 });
-	}
-
-	function testModeOff() {
-		SendWSCommand({ Command: "SetTestMode", State: 0 });
-	}
+	var currentColor = '#ff0000';
 
 	function blockState() {
 		var state = $('#blockOnOffSwitch').val();
+        $.ajax({
+               url: "/api/overlays/model/" + blockName + "/state",
+               method: 'PUT',
+               contentType: "application/json",
+               data: '{"State": ' + state + '}', // data as js object
+               success: function() {}
+               });
+    }
 
-		SendWSCommand({ Command: "SetBlockState", BlockName: blockName, State: state });
-	}
+    function SaveImage() {
+        var dt = new Date();
+        var defaultName = blockName + "-"
+            + dt.getFullYear()
+            + PadLeft(dt.getMonth(), '0', 2)
+            + PadLeft(dt.getDate(), '0', 2)
+            + '-'
+            + PadLeft(dt.getHours(), '0', 2)
+            + PadLeft(dt.getMinutes(), '0', 2)
+            + PadLeft(dt.getSeconds(), '0', 2)
+            + '.png';
+        var filename = prompt("Image Filename (include .jpg/.png extension):", defaultName);
+        if (filename != null) {
+            $.ajax({
+                   url: "/api/overlays/model/" + blockName + "/save",
+                   method: 'PUT',
+                   contentType: "application/json",
+                   data: '{"File": "' + filename + '"}', // data as js object
+                   success: function() {
+                       $.jGrowl("Image Saved", { themeState: 'success' });
+                   },
+                   failure: function() {
+                       $.jGrowl("Error Saving Image", { themeState: 'danger' });
+                   }
+            });
+        }
+    }
 
 	function autoFillChanged() {
 		if ($('#AutoFill').is(':checked'))
@@ -158,16 +120,37 @@ function SendWSCommand(data)
 			ClearMatrix();
 	}
 
+    function ForceShowColorPicker() {
+		if (!$('#ShowColorPicker').is(':checked')) {
+            $('#ShowColorPicker').prop('checked', true);
+            $('#colpicker').show();
+        }
+    }
+
+    function ShowColorPicker() {
+		if ($('#ShowColorPicker').is(':checked')) {
+            $('#colpicker').show();
+        } else {
+            $('#colpicker').hide();
+        }
+    }
+
 	function refreshMatrix() {
 		$('#mmcanvas').drawLayers();
 	}
 
-	function setColor(color) {
+	function setColor(color, updateColpicker = true) {
 		if (color.substring(0,1) != '#')
 			color = '#' + color;
 
+        pluginSettings['color'] = color;
+        SetPluginSetting('fpp-matrixtools', 'color', color, 0, 0);
+        $('#currentColor').css('background-color', color);
+
 		currentColor = color;
-		$('#colpicker').colpickSetColor(color);
+
+        if (updateColpicker)
+		    $('#colpicker').colpickSetColor(color);
 
 		if ($('#AutoFill').is(':checked'))
 			FillMatrix();
@@ -176,13 +159,31 @@ function SendWSCommand(data)
 	function setColorsFromData() {
 		cellColors = {};
 		var width = blockList[blockName].width;
-		for (var p = 0; p < blockData.length; p += 3)
-		{
-			var x = p / 3 % width;
-			var y = parseInt(p / 3 / width);
-			var key = x + "," + y;
-			cellColors[key] = '#' + $.colpick.rgbToHex({ r: blockData[p], g: blockData[p+1], b: blockData[p+2]});
-		}
+
+        if (useRLE) {
+            var i = 0;
+            for (var p = 0; p < blockData.length; p += 4) {
+                var c = blockData[p];
+                var r = blockData[p+1];
+                var g = blockData[p+2];
+                var b = blockData[p+3];
+
+                for (var j = 0; j < c; j++, i++) {
+                    var x = i % width;
+                    var y = parseInt(i / width);
+                    var key = x + "," + y;
+			        cellColors[key] = '#' + $.colpick.rgbToHex({ r: r, g: g, b: b});
+                }
+            }
+        } else {
+            for (var p = 0; p < blockData.length; p += 3)
+            {
+                var x = p / 3 % width;
+                var y = parseInt(p / 3 / width);
+                var key = x + "," + y;
+                cellColors[key] = '#' + $.colpick.rgbToHex({ r: blockData[p], g: blockData[p+1], b: blockData[p+2]});
+            }
+        }
 
 		refreshMatrix();
 	}
@@ -196,22 +197,19 @@ function SendWSCommand(data)
 		} : null;
 	}
 
-	function PixelHex(x, y, hex) {
-		var rgb = hexToRgb(hex);
-		return { Command: 'SetBlockPixel', BlockName: blockName, X: x, Y: y, RGB: [ rgb.r, rgb.g,rgb.b ] };
-	}
-
-	function PixelRGB(x, y, r, g, b) {
-		return { Command: 'SetBlockPixel', BlockName: blockName, X: x, Y: y, RGB: [ r, g, b ] };
-	}
-
 	function ClearMatrix() {
-		SendWSCommand( { Command: "ClearBlock", BlockName: blockName } );
+        $.get( "/api/overlays/model/" + blockName + "/clear", function(data) {
+              });
 		cellColors = {};
 		refreshMatrix();
 	}
 
-	function selectBlock(name) {
+	function selectBlock(name, save = true) {
+        if (save) {
+            pluginSettings['model'] = name;
+            SetPluginSetting('fpp-matrixtools', 'model', name, 0, 0);
+        }
+
 		blockName = name;
 		GetBlockData();
 		InitCanvas();
@@ -219,74 +217,105 @@ function SendWSCommand(data)
 		$('#blockOnOffSwitch').val(blockList[blockName].isActive);
 	}
 
+    var useRLE = true;
 	function GetBlockData() {
-		SendWSCommand( { Command: "GetBlockData", BlockName: blockName } );
+        var path = "/data";
+        if (useRLE)
+            path += "/rle";
+
+        $.get( "/api/overlays/model/" + blockName + path, function(data) {
+            if ((useRLE) &&
+                (!data.hasOwnProperty('rle') || !data.rle)) {
+                useRLE = false;
+                return;
+            }
+
+            blockData = data.data;
+            setColorsFromData();
+            if (!data.isLocked) {
+                StopBlockDataTimer();
+            }
+        });
 	}
 
 	var blockDataTimer = null;
 	function StartBlockDataTimer() {
-		blockDataTimer = setInterval(function(){GetBlockData()}, 100);
+        if (blockDataTimer != null) {
+            clearInterval(blockDataTimer);
+        }
+		blockDataTimer = setInterval(function(){GetBlockData()}, useRLE ? 50 : 100);
 	}
 
 	function StopBlockDataTimer() {
 		if (blockDataTimer != null) {
 			clearInterval(blockDataTimer);
+            blockDataTimer = null;
 		}
 	}
+
+    function FontChanged() {
+        var font = $('#fontList').val();
+        pluginSettings['font'] = font;
+        SetPluginSetting('fpp-matrixtools', 'font', font, 0, 0);
+    }
 
 	function GetFontList() {
-		SendWSCommand( { Command: "GetFontList" } );
-	}
-
-	function ProcessFontListResponse(list) {
-		$('#fontList option').remove();
-		for (var i = 0; i < list.length; i++) {
-			var key = list[i];
-			var text = key.replace(/[^-a-zA-Z0-9]/g, '');
-			if (key == text)
-			{
-				if (key == "fixed")
-					$('#fontList').append("<option value='" + key + "' selected>" + text + "</option>");
-				else
-					$('#fontList').append("<option value='" + key + "'>" + text + "</option>");
-			}
-		}
+        $.get( "/api/overlays/fonts", function(data) {
+              $('#fontList option').remove();
+              data.forEach( function (item, index) {
+                  var key = item;
+			      var text = key.replace(/[^-a-zA-Z0-9]/g, '');
+                  var option = "<option value='" + key + "'";
+                  if (pluginSettings['font'] == key)
+                    option += ' selected';
+                  option += ">" + text + "</option>";
+                  $('#fontList').append(option);
+              });
+           });
 	}
 
 	function GetBlockList() {
-		SendWSCommand( { Command: "GetBlockList" } );
-	}
+        $.get( "/api/overlays/models", function(data){
+              blockList = new Map();
+              $('#blockList option').remove();
+              blockName = "";
+              data.forEach( function (item, index) {
+                    if (blockName == "") {
+                        blockName = item["Name"];
+                    }
+                    var key = item["Name"];
+                    if (item.Orientation == 'vertical') {
+                           item.height = item.ChannelCount / item.StrandsPerString / item.StringCount / 3;
+                           item.width = item.ChannelCount / 3 / item.height;
+                    } else {
+                           item.width = item.ChannelCount / item.StrandsPerString / item.StringCount / 3;
+                           item.height = item.ChannelCount / 3 / item.width;
+                    }
+                           
+                    blockList[key] = item;
 
-	function ProcessBlockListResponse() {
-		GetFontList();
-		$('#blockList option').remove();
-		blockName = "";
-		var sortedNames = Object.keys(blockList);
-		sortedNames.sort();
-		for (var i = 0; i < sortedNames.length; i++) {
-			var key = sortedNames[i];
-			if (blockName == "")
-				blockName = key;
-			if (blockList[key].orientation == 'V')
-			{
-				blockList[key].height = blockList[key].channelCount / blockList[key].strandsPerString / blockList[key].stringCount / 3;
-				blockList[key].width = blockList[key].channelCount / 3 / blockList[key].height;
-			}
-			else
-			{
-				blockList[key].width = blockList[key].channelCount / blockList[key].strandsPerString / blockList[key].stringCount / 3;
-				blockList[key].height = blockList[key].channelCount / 3 / blockList[key].width;
-			}
-			$('#blockList').append("<option value='" + key + "'>" + key + " (" + blockList[key].width + "x" + blockList[key].height + ")</option>");
-		}
-
-		selectBlock(blockName);
+                    var option = "<option value='" + key + "'";
+                    if (pluginSettings['model'] == key) {
+                        option += ' selected';
+                        blockName = key;
+                    }
+                    option += ">" + key + " (" + blockList[key].width + "x" + blockList[key].height + ")</option>";
+                    $('#blockList').append(option);
+              });
+              selectBlock(blockName, false);
+        });
 	}
 
 	function FillMatrix() {
 		var rgb = hexToRgb(currentColor);
-		SendWSCommand( { Command: "SetBlockColor", BlockName: blockName,
-			RGB: [ rgb.r, rgb.g, rgb.b ] } );
+        $.ajax({
+               url: "/api/overlays/model/" + blockName + "/fill",
+               method: 'PUT',
+               contentType: "application/json",
+               data: JSON.stringify({RGB: [ rgb.r, rgb.g, rgb.b ]}),
+               success: function() {}
+               });
+        
 		if (currentColor == "#000000") {
 			cellColors = {};
 		} else {
@@ -300,6 +329,28 @@ function SendWSCommand(data)
 		refreshMatrix();
 	}
 
+	function ColorPixelUnderMouse(layer) {
+		var x = Math.floor(layer.eventX / cellsize);
+
+        if (x >= blockList[blockName].width)
+            x = blockList[blockName].width - 1;
+
+		var y = Math.floor(layer.eventY / cellsize);
+
+        if (y >= blockList[blockName].height)
+            y = blockList[blockName].height - 1;
+
+		if (pluginSettings['LargePen'] == "1") {
+			for (var xd = -1; xd <= 1; xd++) {
+				for (var yd = -1; yd <= 1; yd++) {
+					ColorPixel(x + xd, y + yd);
+				}
+			}
+		} else {
+			ColorPixel(x, y);
+		}
+	}
+
 	function ColorPixel(x, y) {
 		if ((x >= blockList[blockName].width) ||
 			(y >= blockList[blockName].height) ||
@@ -307,7 +358,6 @@ function SendWSCommand(data)
 			(y < 0))
 			return;
 
-		// FIXME, enhance to add pen width support (1, 3, 5, 7, 9)
 		var key = x + "," + y;
 		if (currentColor == "")
 			currentColor = '#000000';
@@ -320,58 +370,99 @@ function SendWSCommand(data)
 		refreshMatrix();
 
 		var rgb = hexToRgb(currentColor);
-
-		var data = { Command: 'SetBlockPixel', BlockName: blockName, X: x, Y: y, RGB: [ rgb.r, rgb.g, rgb.b ] };
-		SendWSCommand(data);
-	}
+        $.ajax({
+               url: "/api/overlays/model/" + blockName + "/pixel",
+               method: 'PUT',
+               contentType: "application/json",
+               data: JSON.stringify({RGB: [ rgb.r, rgb.g, rgb.b ], X: x, Y: y}),
+               success: function() {}
+               });
+    }
 
 	function PlaceText() {
 //		ClearMatrix();
 		var msg = $('#inputText').val();
 		var data = {
-			Command: 'TextMessage',
-			BlockName: blockName,
 			Message: msg,
 			Color: currentColor,
-			Fill: '#000000',
 			Font: $('#fontList').val(),
-			FontSize: $('#fontSize').val(),
+			FontSize: parseInt($('#fontSize').val()),
 			Position: $('#textPosition').val(),
-			Direction: $('#scrollDirection').val(),
-			PixelsPerSecond: $('#scrollSpeed').val(),
+			PixelsPerSecond: parseInt($('#scrollSpeed').val()),
+            AntiAlias: $('#antiAliased').prop('checked'),
+            AutoEnable: $('#autoEnable').prop('checked')
 			};
-		SendWSCommand(data);
 
 		if ($('#ShowTextEffect').is(':checked'))
 			StartBlockDataTimer();
+        
+        $.ajax({
+               url: "/api/overlays/model/" + blockName + "/text",
+               method: 'PUT',
+               contentType: "application/json",
+               data: JSON.stringify(data),
+               success: function() {
+                    GetBlockData();
+               }
+               });
 	}
 
-	var canvasWidth = 740;
-	var canvasHeight = 370;
+	var canvasWidth = <? echo $canvasWidth; ?>;
+	var canvasHeight = <? echo $canvasHeight; ?>;
 	var cellsize = 10;
+	var halfCellSize = Math.floor(cellsize / 2);
+	var quarterCellSize = Math.floor(halfCellSize / 2);
 	var mouseDown = 0;
-	var mouseDownX= 0;
-	var mouseDownY= 0;
 
 	function InitCanvas() {
-		if ((blockList[blockName].width > 74) || (blockList[blockName].height > 37))
+        if ((blockList[blockName].width > 1400) ||
+            (blockList[blockName].height > 800)) {
+            $('#mmcanvas').hide();
+            $('#warning').html('Model too large to display.');
+            $('#warning').show();
+            return;
+        } else {
+            $('#warning').hide();
+            $('#warning').html('');
+            $('#mmcanvas').show();
+        }
+
+        canvasWidth = <? echo $canvasWidth; ?>;
+        canvasHeight = <? echo $canvasHeight; ?>;
+
+        canvasWidth = window.innerWidth - 150;
+        if (canvasWidth < 500)
+            canvasWidth = 500;
+
+        canvasHeight = parseInt(canvasWidth / 1.7);
+
+		if ((blockList[blockName].width > (canvasWidth / 10)) || (blockList[blockName].height > (canvasHeight / 10)))
 			cellsize = 5;
-cellsize = 5;
+        cellsize = 5;
 
-xsize = parseInt(740 / blockList[blockName].width);
-ysize = parseInt(370 / blockList[blockName].height);
-if (xsize < ysize)
-	cellsize = xsize;
-else
-	cellsize = ysize;
-if (cellsize > 20)
-	cellsize = 20;
+        xsize = parseInt(canvasWidth / blockList[blockName].width);
+        ysize = parseInt(canvasHeight / blockList[blockName].height);
+        if (xsize < ysize)
+            cellsize = xsize;
+        else
+            cellsize = ysize;
+        if (cellsize > 20)
+            cellsize = 20;
 
-var halfCellSize = Math.floor(cellsize / 2);
-var quarterCellSize = Math.floor(halfCellSize / 2);
+        halfCellSize = Math.floor(cellsize / 2);
+        quarterCellSize = Math.floor(halfCellSize / 2);
+
+		if (cellsize > 4)
+			$('.showGridWrapper').show();
+		else
+			$('.showGridWrapper').hide();
 
 		canvasWidth = blockList[blockName].width * cellsize;
 		canvasHeight = blockList[blockName].height * cellsize;
+
+        var ctx = $('#mmcanvas')[0].getContext('2d');
+        ctx.canvas.width = canvasWidth;
+        ctx.canvas.height = canvasHeight;
 
 		$('#mmcanvas').removeLayers();
 		$('#mmcanvas').clearCanvas();
@@ -386,26 +477,15 @@ var quarterCellSize = Math.floor(halfCellSize / 2);
 			width: canvasWidth,
 			height: canvasHeight,
 			mousedown: function(layer) {
-				var pixelX = Math.floor(layer.eventX / cellsize);
-				var pixelY = Math.floor(layer.eventY / cellsize);
 				mouseDown = 1;
-				mouseDownX = pixelX;
-				mouseDownY = pixelY;
 			},
 			mouseup: function(layer) {
-				var pixelX = Math.floor(layer.eventX / cellsize);
-				var pixelY = Math.floor(layer.eventY / cellsize);
+				ColorPixelUnderMouse(layer);
 				mouseDown = 0;
-				ColorPixel(pixelX, pixelY);
 			},
 			mousemove: function(layer) {
 				if (mouseDown)
-				{
-					var pixelX = Math.floor(layer.eventX / cellsize);
-					var pixelY = Math.floor(layer.eventY / cellsize);
-
-					ColorPixel(pixelX, pixelY);
-				}
+					ColorPixelUnderMouse(layer);
 			},
 		});
 
@@ -414,7 +494,8 @@ var quarterCellSize = Math.floor(halfCellSize / 2);
 			layer: true,
 			fn: function(ctx) {
 
-				if (pluginSettings['ShowGrid'] == "1") {
+				if ((pluginSettings['ShowGrid'] == "1") &&
+					(cellsize > 4)) {
 					for (var x = 0; x <= canvasWidth; x += cellsize) {
 						ctx.beginPath();
 						ctx.strokeStyle = '#555';
@@ -452,10 +533,14 @@ var quarterCellSize = Math.floor(halfCellSize / 2);
 						y = y * cellsize + 1;
 
 						ctx.beginPath();
-						if (pluginSettings['ShowRoundPixels'] == "1") {
-							ctx.arc(x + halfCellSize, y + halfCellSize, quarterCellSize, 0, 2 * Math.PI, false);
+						if (cellsize > 2) {
+							if ((halfCellSize) && (quarterCellSize) && (pluginSettings['ShowRoundPixels'] == "1")) {
+								ctx.arc(x + halfCellSize, y + halfCellSize, quarterCellSize, 0, 2 * Math.PI, false);
+							} else {
+								ctx.rect(x, y, cellsize - 2, cellsize - 2);
+							}
 						} else {
-							ctx.rect(x, y, cellsize - 2, cellsize - 2);
+							ctx.rect(x, y, cellsize, cellsize);
 						}
 						ctx.fillStyle = cellColors[key];
 						ctx.fill();
@@ -471,129 +556,141 @@ var quarterCellSize = Math.floor(halfCellSize / 2);
 </script>
 
 
-<div class='fppTabs'>
-	<div class='title'>Matrix Tools</div>
 	<div id="matrixTabs">
-		<ul>
-			<li><a href="#tab-mmtext">Text</a></li>
-			<li><a href="#tab-mmdraw">Draw</a></li>
+		<ul class='nav nav-pills pageContent-tabs' role='tablist'>
+			<li class='nav-item'>
+                <a class='nav-link active' data-toggle='tab' role='tab' aria-selected='true' aria-controls='tab-mmtext' href="#tab-mmtext">Text</a>
+            </li>
+			<li class='nav-item'>
+                <a class='nav-link' data-toggle='tab' role='tab' aria-selected='true' aria-controls='tab-mmdraw' href="#tab-mmdraw">Draw</a>
+            </li>
 <!--
 			<li><a href="#tab-mmimage">Image</a></li>
 -->
 		</ul>
 
-		<div id= "divSelect" class='ui-tabs-panel matrix-tool-top-panel'>
-			<select id='blockList' onChange='selectBlock(this.value);'></select> - State:
-			<select id='blockOnOffSwitch' onChange='blockState()'>
-				<option value='0'>Disabled</option>
-				<option value='1'>Enabled</option>
-				<option value='2'>Transparent</option>
-				<option value='3'>Transparent RGB</option>
-			</select>
-			<input type='button' value='Clear' onClick='ClearMatrix();' class='buttons'>
-			<input type='button' value='Sync Back' onClick='SyncBackDisplay();' class='buttons'>
-		</div>
+        <div style='float: left; padding: 0px 50px 20px 0px;'>
+        <table border=0>
+            <tr><td>Model:</td>
+                <td><select id='blockList' onChange='selectBlock(this.value, true);'></select></td>
+            <tr><td>State:</td>
+                <td><select id='blockOnOffSwitch' onChange='blockState()'>
+                        <option value='0'>Disabled</option>
+                        <option value='1'>Enabled</option>
+                        <option value='2'>Transparent</option>
+                        <option value='3'>Transparent RGB</option>
+                    </select></td>
+                </tr>
+            <tr><td colspan='2'><input type='button' value='Clear' onClick='ClearMatrix();' class='buttons'>
+					<input type='button' value='Fill' onClick='FillMatrix();' class='buttons'>
+        <?
+        if (getFPPVersionFloat() >= 6.0)
+            echo "<input type='button' value='Save Image' onClick='SaveImage();' class='buttons' id='saveButton'>\n";
+        ?>
+                    </td>
+                </tr>
+        </table>
+        </div>
 
-		<div id="tab-mmtext" class='matrix-tool-middle-panel'>
+        <div style='float: left; padding: 0px 50px 20px 0px;'>
+        <table border=0>
+			<tr><td>Pallette:</td>
+				<td><div class='colorButton red' onClick='setColor("#ff0000");'></div>
+					<div class='colorButton green' onClick='setColor("#00ff00");'></div>
+					<div class='colorButton blue' onClick='setColor("#0000ff");'></div>
+				    <div class='colorButton white' onClick='setColor("#ffffff");'></div>
+					<div class='colorButton black' onClick='setColor("#000000");'></div>
+				</td>
+                </tr>
+            <tr><td>Current Color:</td><td><span id='currentColor' onClick="ForceShowColorPicker();" style='cursor: pointer;'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></td></tr>
+                </tr>
+            <tr><td>Show Color Picker:</td>
+                <td><? PrintSettingCheckbox("Show Color Picker", "ShowColorPicker", 0, 0, "1", "0", "fpp-matrixtools", "ShowColorPicker"); ?></td>
+                </tr>
+            <tr><td>Auto-Fill:</td>
+                <td><? PrintSettingCheckbox("Auto Fill Block", "AutoFill", 0, 0, "1", "0", "fpp-matrixtools", "autoFillChanged"); ?></td>
+                </tr>
+        </table>
+        </div>
+
+        <div style='float: left;'>
+            <div id="colpicker"></div>
+        </div>
+        <div style='clear: both;'></div>
+        <br>
+
+		<div id= "divSelect" class='ui-tabs-panel matrix-tool-top-panel'>
+        </div>
+
+    <div class='tab-content'>
+		<div id="tab-mmtext" class='matrix-tool-middle-panel tab-pane fade show active' role='tabpanel'>
 			<div id="divText">
+                <input type='button' value='Place Text' onClick='PlaceText();' class='buttons'>
+                <input type='button' value='Sync Back' onClick='GetBlockData();' class='buttons'>
+
 				<table border=0><tr><td valign='top'>
 					<table border=0>
-					<tr><td>Text:</td><td colspan=4><input type='text' maxlength='120' size='55' id='inputText'>&nbsp;<input type='button' value='Go' onClick='PlaceText();'></td></tr>
+                    <tr><td>Auto-Enable:</td>
+					    <td><? PrintSettingCheckbox("Auto-Enable", "autoEnable", 0, 0, "1", "0", "fpp-matrixtools"); ?>
+                            </td></tr>
+
+					<tr><td>Text:</td><td colspan=4><textarea cols='64' rows='2' id='inputText'></textarea></td></tr>
 					<tr><td>Font :</td>
-						<td><select id='fontList'>
+						<td><select id='fontList' onChange='FontChanged();'>
 							</select></td>
 						<td width='30px'></td>
-						<td>Scroll&nbsp;Direction:</td>
-						<td><select id='scrollDirection'>
-							<option value='R2L' selected>Right To Left</option>
-							<option value='L2R'>Left To Right</option>
-							<option value='B2T'>Bottom To Top</option>
-							<option value='T2B'>Top To Bottom</option>
-							</select>
-							</td>
 						</tr>
 					<tr><td>Font&nbsp;Size:</td>
-						<td><select id='fontSize'>
-							<option value='5'>5</option>
-							<option value='6'>6</option>
-							<option value='7'>7</option>
-							<option value='8'>8</option>
-							<option value='9'>9</option>
-							<option value='10' selected>10</option>
-							<option value='12'>12</option>
-							<option value='14'>14</option>
-							<option value='16'>16</option>
-							<option value='18'>18</option>
-							<option value='20'>20</option>
-							<option value='22'>22</option>
-							<option value='24'>24</option>
-							<option value='26'>26</option>
-							<option value='28'>28</option>
-							<option value='30'>30</option>
-							<option value='32'>32</option>
-							<option value='34'>34</option>
-							<option value='36'>36</option>
-							<option value='38'>38</option>
-							<option value='40'>40</option>
-							<option value='42'>42</option>
-							<option value='44'>44</option>
-							<option value='46'>46</option>
-							<option value='48'>48</option>
-							<option value='50'>50</option>
-							<option value='52'>52</option>
-							<option value='54'>54</option>
-							<option value='56'>56</option>
-							<option value='58'>58</option>
-							<option value='60'>60</option>
-							</select>
+						<td>
+<?
+$fontSizes = array(
+'5' => '5', '6' => '6', '7' => '7', '8' => '8', '9' => '9', '10' => '10',
+'12' => '12', '14' => '14', '16' => '16', '18' => '18', '20' => '20',
+'22' => '22', '24' => '24', '26' => '26', '28' => '28', '30' => '30',
+'32' => '32', '34' => '34', '36' => '36', '38' => '38', '40' => '40',
+'42' => '42', '44' => '44', '46' => '46', '48' => '48', '50' => '50',
+'52' => '52', '54' => '54', '56' => '56', '58' => '58', '60' => '60',
+'64' => '64', '70' => '70', '74' => '74', '80' => '80',
+);
+PrintSettingSelect('Font Size', 'fontSize', 0, 0, '10', $fontSizes, 'fpp-matrixtools');
+?>
+							&nbsp;
+                            Anti-Aliased:&nbsp;
+					        <? PrintSettingCheckbox("Anti-Alias", "antiAliased", 0, 0, "1", "0", "fpp-matrixtools"); ?>
 							</td>
-						<td width='30px'></td>
-						<td>Scroll&nbsp;Speed (pixels per second):</td>
-						<td><select id='scrollSpeed'>
-							<option value='1'>1</option>
-							<option value='2'>2</option>
-							<option value='3'>3</option>
-							<option value='4'>4</option>
-							<option value='5'>5</option>
-							<option value='6'>6</option>
-							<option value='7'>7</option>
-							<option value='8'>8</option>
-							<option value='9'>9</option>
-							<option value='10' selected>10</option>
-							<option value='11'>11</option>
-							<option value='12'>12</option>
-							<option value='13'>13</option>
-							<option value='14'>14</option>
-							<option value='15'>15</option>
-							<option value='16'>16</option>
-							<option value='17'>17</option>
-							<option value='18'>18</option>
-							<option value='19'>19</option>
-							<option value='20'>20</option>
-							<option value='25'>25</option>
-							<option value='30'>30</option>
-							<option value='35'>35</option>
-							<option value='40'>40</option>
-							<option value='45'>45</option>
-							<option value='50'>50</option>
-							<option value='55'>55</option>
-							<option value='60'>60</option>
-							<option value='65'>65</option>
-							<option value='70'>70</option>
-							<option value='75'>75</option>
-							<option value='80'>80</option>
-							<option value='85'>85</option>
-							<option value='90'>90</option>
-							<option value='95'>95</option>
-							<option value='100'>100</option>
-							</select>
-							</td>
-						</tr>
+                        </tr>
 					<tr><td>Position:</td>
-						<td><select id='textPosition'>
-							<option value='center'>Center</option>
-							<option value='scroll' selected>Scroll</option>
-							</select></td>
+						<td>
+<?
+$textPositions = array(
+'Center' => 'Center',
+'Right to Left' => 'R2L',
+'Left to Right' => 'L2R',
+'Bottom to Top' => 'B2T',
+'Top to Bottom' => 'T2B',
+);
+PrintSettingSelect('Position', 'textPosition', 0, 0, 'Center', $textPositions, 'fpp-matrixtools');
+?>
+							</td>
+                        </tr>
+                    <tr><td>Scroll Speed:</td>
+						<td>
+<?
+$scrollSpeeds = array(
+'1' => '1', '2' => '2', '3' => '3', '4' => '4', '5' => '5',
+'6' => '6', '7' => '7', '8' => '8', '9' => '9', '10' => '10',
+'11' => '11', '12' => '12', '13' => '13', '14' => '14', '15' => '15',
+'16' => '16', '17' => '17', '18' => '18', '19' => '19', '20' => '20',
+'25' => '25', '30' => '30', '35' => '35', '40' => '40', '45' => '45',
+'50' => '50', '55' => '55', '60' => '60', '65' => '65', '70' => '70',
+'75' => '75', '80' => '80', '85' => '85', '90' => '90', '95' => '95',
+'100' => '100', '120' => '120', '140' => '140', '160' => '160', '180' => '180',
+'200' => '200'
+);
+PrintSettingSelect('Scroll Speed', 'scrollSpeed', 0, 0, '10', $scrollSpeeds, 'fpp-matrixtools');
+?>
+							(pixels per second)
+							</td>
 						</tr>
 					</table>
 
@@ -603,14 +700,10 @@ var quarterCellSize = Math.floor(halfCellSize / 2);
 			</div>
 		</div>
 
-		<div id="tab-mmdraw" class='matrix-tool-middle-panel'>
+		<div id="tab-mmdraw" class='matrix-tool-middle-panel tab-pane fade show active' role='tabpanel'>
 			<div id= "divDraw">
 					<table border=0><tr><td valign='top'>
 						<table border=0>
-						<tr><td>Block Fill:</td>
-							<td><input type='button' value='Fill' onClick='FillMatrix();' class='buttons'></td>
-							</tr>
-						<tr><td>Auto-Fill: <? PrintSettingCheckbox("Auto Fill Block", "AutoFill", 0, 0, "1", "0", "fpp-matrixtools", "autoFillChanged"); ?></td>
 						</table>
 					</table>
 			</div>
@@ -632,62 +725,68 @@ var quarterCellSize = Math.floor(halfCellSize / 2);
 -->
 
 		<div id= "divCanvas" class='ui-tabs-panel matrix-tool-bottom-panel'>
-			<table border=0><tr><td valign='top'>
-			<div id="colpicker"></div>
-			</td><td width='30px'></td><td valign='top'>
+			<table border=0>
+            <tr><td valign='top'>
 			<div>
 				<table border=0>
-					<tr><td valign='top'>Pallette:</td>
-						<td><div class='colorButton red' onClick='setColor("#ff0000");'></div>
-							<div class='colorButton green' onClick='setColor("#00ff00");'></div>
-							<div class='colorButton blue' onClick='setColor("#0000ff");'></div>
-						</td>
-					</tr>
-					<tr><td></td>
-						<td><div class='colorButton white' onClick='setColor("#ffffff");'></div>
-							<div class='colorButton black' onClick='setColor("#000000");'></div>
-						</td>
-					</tr>
 				</table>
 			</div>
-			</td></tr></table>
+			</td></tr>
+            </table>
 			<br>
 			<table border=0>
 				<tr><td>Matrix</td>
 					<td width='40px'>&nbsp;</td>
-					<td>Show Text: <? PrintSettingCheckbox("Show Text Effect", "ShowTextEffect", 0, 0, "1", "0", "fpp-matrixtools"); ?></td>
+					<td>Large Pen: <? PrintSettingCheckbox("Large Pen", "LargePen", 0, 0, "1", "0", "fpp-matrixtools", ""); ?></td>
 					<td width='40px'>&nbsp;</td>
 					<td>Round Pixels: <? PrintSettingCheckbox("Show Round Pixels", "ShowRoundPixels", 0, 0, "1", "0", "fpp-matrixtools", "refreshMatrix"); ?></td>
 					<td width='40px'>&nbsp;</td>
-					<td>Show Grid: <? PrintSettingCheckbox("Show Grid", "ShowGrid", 0, 0, "1", "0", "fpp-matrixtools", "refreshMatrix"); ?></td>
+					<td>Show Text: <? PrintSettingCheckbox("Show Text Effect", "ShowTextEffect", 0, 0, "1", "0", "fpp-matrixtools"); ?></td>
+					<td class='showGridWrapper' width='40px'>&nbsp;</td>
+					<td class='showGridWrapper'>Show Grid: <? PrintSettingCheckbox("Show Grid", "ShowGrid", 0, 0, "1", "0", "fpp-matrixtools", "refreshMatrix"); ?></td>
 				</tr>
 			</table>
-			<center>
-				<canvas id='mmcanvas' class='matrix' height='371' width='741'></canvas>
-			</center>
+				<table>
+					<tr><td>
+						<canvas id='mmcanvas' class='matrix' width='<? echo $canvasWidth + 1; ?>' height=<? echo $canvasHeight + 1; ?>'></canvas>
+                        </td></tr>
+                    <tr><td align='center'>
+						<span id='warning' style='display: none; color: #ff0000; font-weight: bold;'></span>
+                        </td></tr>
+                    <tr><td align='center'>
+						<div id='log'></div>
+					</td></tr>
+				</table>
 		</div>
+	</div>
 
 	</div>
-</div>
 
-<div id='log'></div>
 
 <script>
 
-	$("#matrixTabs").tabs({active: 0, cache: true, spinner: "", fx: { opacity: 'toggle', height: 'toggle' } });
-
+    var colpickTimer = null;
 	$('#colpicker').colpick({
 		flat: true,
 		layout: 'rgbhex',
 		color: '#ff0000',
 		submit: false,
 		onChange: function(hsb,hex,rgb,el,bySetColor) {
-			if (!bySetColor)
-				setColor('#'+hex);
+            if (colpickTimer != null)
+                clearTimeout(colpickTimer);
+
+            colpickTimer = setTimeout(function() { setColor('#'+hex, false); }, 500);
 		}
 	});
 
+    if (pluginSettings.hasOwnProperty('color') && pluginSettings['color'] != '') {
+        currentColor = pluginSettings['color'];
+        $('#currentColor').css('background-color', currentColor);
+    }
+
+    ShowColorPicker();
 	GetBlockList();
+    GetFontList();
 
 </script>
 
