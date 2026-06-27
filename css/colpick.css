@@ -418,3 +418,25 @@ colpick Color Picker / colpick.com
 	background-color:#101010;
 	border-color:#444;
 }
+
+/* FPP10 dark mode: keep the color-picker widget from rendering as a bright
+   light island when Bootstrap's data-bs-theme="dark" is active. Only the
+   widget chrome is remapped; the selected-color swatches stay as-is. */
+[data-bs-theme="dark"] .colpick {
+	background: var(--fpp-bg-card);
+	border-color: var(--fpp-border);
+}
+[data-bs-theme="dark"] .colpick_field,
+[data-bs-theme="dark"] .colpick_hex_field,
+[data-bs-theme="dark"] .colpick_submit {
+	background: var(--bs-body-bg);
+	border-color: var(--fpp-border);
+	color: var(--bs-body-color);
+}
+[data-bs-theme="dark"] .colpick_field input,
+[data-bs-theme="dark"] .colpick_hex_field input {
+	color: var(--bs-body-color);
+}
+[data-bs-theme="dark"] .colpick_field_letter {
+	color: var(--fpp-text-muted);
+}
