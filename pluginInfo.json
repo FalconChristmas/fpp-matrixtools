@@ -6,6 +6,7 @@
 	"homeURL": "https://github.com/FalconChristmas/fpp-matrixtools",
 	"srcURL": "https://github.com/FalconChristmas/fpp-matrixtools.git",
 	"bugURL": "https://github.com/FalconChristmas/fpp-matrixtools/issues",
+	"iconURL": "https://raw.githubusercontent.com/FalconChristmas/fpp-matrixtools/master/icon.png",
 	"versions": [
 		{
 			"minFPPVersion": "7.0",
