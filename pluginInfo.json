@@ -20,5 +20,22 @@
 			"branch": "master",
 			"sha": ""
 		}
-	]
+	],
+	"privacy": {
+	 "summary": "Runs on this device. Only its optional command-line tool sends text and drawing commands to another FPP player you name on your network.",
+	 "sends": [
+	  {
+	   "to": "http://the FPP player you name when you run the command-line tool (this device unless you name another)",
+	   "what": "the text, colour and drawing commands you give the command-line tool",
+	   "why": "so the command-line tool can drive a matrix on that player",
+	   "alwaysOn": false
+	  }
+	 ],
+	 "collects": [],
+	 "sensors": [],
+	 "remoteAccess": "none",
+	 "systemChanges": [],
+	 "closedCode": false,
+	 "other": "The Save Image button writes the current drawing as a PNG into your images folder (/home/fpp/media/images/) when you ask. Your chosen model, font, colour and display options are kept in config/plugin.fpp-matrixtools and remain after uninstall."
+	}
 }
